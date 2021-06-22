@@ -1,22 +1,23 @@
 use reqwest::header::USER_AGENT;
 const APP_USER_AGENT: &str = "curl/7.68.0";
 
-fn parse_your_dictionary(contents: String) {
+fn parse_your_dictionary(contents: String) -> Vec<String> {
     let vec_class = contents.split("<div class=\"single-synonym-wrapper\" ").collect::<Vec<&str>>();
     let vec_ul = vec_class[1].split("</span></button></div></div></div> <!----></div></div> <!----></div></div>").collect::<Vec<&str>>();
     let vec_span = vec_ul[0].split("<!---->").collect::<Vec<&str>>(); 
 
+    let mut vec = Vec::new();
     for s in vec_span {
         if s.contains("class=\"synonym-link\" data-v-b5c08d74>") {
             let split_word = s.split("class=\"synonym-link\" data-v-b5c08d74>").collect::<Vec<&str>>();
             let split_link = split_word[1].split("</").collect::<Vec<&str>>();
-            println!("{}", split_link[0]);
+            vec.push(split_link[0].to_string());
         }
     }
+    return vec;
 }
 
-pub fn request_your_dictionary(word: &str) {
-    
+pub fn request_your_dictionary(word: &str) -> Vec<String>{
     let client = reqwest::blocking::Client::new();
 
     let url = format!("https://thesaurus.yourdictionary.com/{}", word);
@@ -26,5 +27,5 @@ pub fn request_your_dictionary(word: &str) {
 
     let body = res.unwrap().text().unwrap();
 
-    parse_your_dictionary(body);
+    return parse_your_dictionary(body);
 }

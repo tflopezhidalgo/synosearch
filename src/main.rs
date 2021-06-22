@@ -25,8 +25,18 @@ fn main() {
         println!("{}", p.parse("car".to_string()));
     }
     */
-    let word = "car";
-    parse_thesaurus::request_thesaurus(word);
-    parse_merian_webster::request_merian_webster(word);
-    parse_your_dictionary::request_your_dictionary(word);
+    let word = "table";
+    
+    let vec_th = parse_thesaurus::request_thesaurus(word);
+    let vec_mw = parse_merian_webster::request_merian_webster(word);
+    let vec_yd = parse_your_dictionary::request_your_dictionary(word);
+    
+    let mut vec = Vec::new();
+    vec.extend_from_slice(&vec_th);
+    vec.extend_from_slice(&vec_mw);
+    vec.extend_from_slice(&vec_yd);
+
+    for i in vec {
+        println!("{}", i);
+    }
 }
