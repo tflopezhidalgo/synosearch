@@ -1,9 +1,4 @@
-use std::fs;
-
-fn parse_merian_webster() {
-    let contents = fs::read_to_string("scraper/merriam_webster.html")
-        .expect("Something went wrong reading the file");
-
+fn parse_merian_webster(contents: String) {
     let vec_class = contents.split("<ul class=\"mw-list\">").collect::<Vec<&str>>();
     let vec_ul = vec_class[1].split("</ul>").collect::<Vec<&str>>();
     let vec_il = vec_ul[0].split("<li>").collect::<Vec<&str>>();
@@ -18,5 +13,12 @@ fn parse_merian_webster() {
             
             println!("{}", _word);
         }
-    }}
+    }
+}
 
+pub fn request_merian_webster(word: &str) {
+    let url = format!("https://www.merriam-webster.com/thesaurus/{}", word);
+    let body = reqwest::blocking::get(url).unwrap().text().unwrap();
+
+    parse_merian_webster(body);
+}

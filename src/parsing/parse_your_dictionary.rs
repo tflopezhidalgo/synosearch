@@ -1,9 +1,7 @@
-use std::fs;
+use reqwest::header::USER_AGENT;
+const APP_USER_AGENT: &str = "curl/7.68.0";
 
-fn parse_your_dictionary() {
-    let contents = fs::read_to_string("scraper/your_dictionary.html")
-        .expect("Something went wrong reading the file");
-
+fn parse_your_dictionary(contents: String) {
     let vec_class = contents.split("<div class=\"single-synonym-wrapper\" ").collect::<Vec<&str>>();
     let vec_ul = vec_class[1].split("</span></button></div></div></div> <!----></div></div> <!----></div></div>").collect::<Vec<&str>>();
     let vec_span = vec_ul[0].split("<!---->").collect::<Vec<&str>>(); 
@@ -17,3 +15,16 @@ fn parse_your_dictionary() {
     }
 }
 
+pub fn request_your_dictionary(word: &str) {
+    
+    let client = reqwest::blocking::Client::new();
+
+    let url = format!("https://thesaurus.yourdictionary.com/{}", word);
+    let res = client.get(url)
+        .header(USER_AGENT, APP_USER_AGENT)
+        .send();
+
+    let body = res.unwrap().text().unwrap();
+
+    parse_your_dictionary(body);
+}
