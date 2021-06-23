@@ -1,25 +1,21 @@
-mod parsing; 
-
-use parsing::{DummyProvider, Parser};
-
-/* cantidad máxima de pedidos a webs de forma concurrente */
-const MAX_REQ_CONCURRENCY: u32 = 1;
-
-/* TODO tomar params desde línea de comandos */
-/* TODO tiempo de espera entre dos requests consecutivas al mismo sitio */
+mod parsing;
+use parsing::{
+    ThesaurusProvider, 
+    YourDictionaryProvider, 
+    MarianWebsterProvider, 
+    Parser
+};
 
 
 fn main() {
-    let temp_1 = DummyProvider{
-        url: String::from("http://google.com")
-    };
-    let temp_2 = DummyProvider{
-        url: String::from("http://yahoo.com")
-    };
 
-    let providers: Vec<&Parser> = std::vec![&temp_1, &temp_2];
+    let p1 = &ThesaurusProvider {url: "".to_string()};
+    let p2 = &YourDictionaryProvider {url: "".to_string()};
+    let p3 = &MarianWebsterProvider {url: "".to_string()};
+
+    let providers: Vec<& dyn Parser> = vec![p1, p2, p3];
 
     for p in providers {
-        println!("{}", p.parse("car".to_string()));
+        println!("{:?}", p.parse("car".to_string()));
     }
 }
