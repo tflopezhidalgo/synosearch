@@ -11,14 +11,14 @@ use std::thread::{self, JoinHandle};
 use std::{time, vec};
 use std::sync::{Arc, Mutex, Condvar};
 use std_semaphore::Semaphore;
+use std::ops::Deref;
+use std::time::Duration;
 
-const REQ_TIMEOUT_SECS: u64 = 3;
-
-const MAX_CONCURRENCY: isize = 3;
-
+const REQ_TIMEOUT_SECS: u64 = 10;
+const MAX_CONCURRENCY: isize = 2;
+static mut SEM_COUNT: i32 = 3;
 
 fn pagina(w: Arc<String>, id: i32, sem: Arc<Semaphore>, cv: Arc<(Mutex<std::time::Instant>, Condvar)>) -> () {
-    sem.acquire();
 
     let (lock, cvar) = &*cv;
 
@@ -27,14 +27,13 @@ fn pagina(w: Arc<String>, id: i32, sem: Arc<Semaphore>, cv: Arc<(Mutex<std::time
     loop {
 
         /* https://doc.rust-lang.org/nightly/std/sync/struct.Condvar.html#method.wait_timeout */
-        let timeout = time::Duration::from_millis(3000);
+        let timeout = time::Duration::from_millis(1000);
 
         let result = cvar.wait_timeout(last, timeout).unwrap();
 
         /* Si llegamos hasta acá es porque alguien le hizo notify() o porque se cumplió el timeout
          * de 3000 milis.
          */
-
         let now = time::Instant::now();
 
         last = result.0; 
@@ -45,9 +44,12 @@ fn pagina(w: Arc<String>, id: i32, sem: Arc<Semaphore>, cv: Arc<(Mutex<std::time
         }
     }
 
+    println!("Palabra {:?} pagina {:?} intentando tomar el semaforo", w, id);
+    sem.acquire();
     println!("<-- Haciendo request de sinónimos de {:?} en página {:?} -->", w, id);
-
+    thread::sleep(Duration::from_millis(10000));
     sem.release();
+    println!("##### La palabra {:?} termino de hacer el request en la página {:?} -->", w, id);
 
     // Dejamos el último instante en que se ejecutó
     *last = time::Instant::now();
@@ -60,7 +62,7 @@ fn palabra(w: Arc<String>, sem: Arc<Semaphore>, cvs: Arc<Vec<Arc<(Mutex<std::tim
 
     let mut paginas : Vec<JoinHandle<()>> = vec!();
 
-    for i in 0..5 {
+    for i in 0..20 {
         let w = w.clone();
         let sem = sem.clone();
         let cvs = cvs.clone();
@@ -81,6 +83,22 @@ fn main() {
 
     let cvs = Arc::new(vec!(
         // deberían iniciar en 0 
+        Arc::new((Mutex::new(time::Instant::now()), Condvar::new())),
+        Arc::new((Mutex::new(time::Instant::now()), Condvar::new())),
+        Arc::new((Mutex::new(time::Instant::now()), Condvar::new())),
+        Arc::new((Mutex::new(time::Instant::now()), Condvar::new())),
+        Arc::new((Mutex::new(time::Instant::now()), Condvar::new())),
+        Arc::new((Mutex::new(time::Instant::now()), Condvar::new())),
+        Arc::new((Mutex::new(time::Instant::now()), Condvar::new())),
+        Arc::new((Mutex::new(time::Instant::now()), Condvar::new())),
+        Arc::new((Mutex::new(time::Instant::now()), Condvar::new())),
+        Arc::new((Mutex::new(time::Instant::now()), Condvar::new())),
+        Arc::new((Mutex::new(time::Instant::now()), Condvar::new())),
+        Arc::new((Mutex::new(time::Instant::now()), Condvar::new())),
+        Arc::new((Mutex::new(time::Instant::now()), Condvar::new())),
+        Arc::new((Mutex::new(time::Instant::now()), Condvar::new())),
+        Arc::new((Mutex::new(time::Instant::now()), Condvar::new())),
+        Arc::new((Mutex::new(time::Instant::now()), Condvar::new())),
         Arc::new((Mutex::new(time::Instant::now()), Condvar::new())),
         Arc::new((Mutex::new(time::Instant::now()), Condvar::new())),
         Arc::new((Mutex::new(time::Instant::now()), Condvar::new())),
