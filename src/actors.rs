@@ -1,41 +1,28 @@
-
-use actix::prelude::*;
-
 mod parsing;
 use parsing::{
     MarianWebsterProvider, 
     Parser
 };
 
-// this is our Message
-// we have to define the response type (rtype)
-#[derive(Message)]
-#[rtype(result = "Vec<String>")]
-struct Word(String);
+use actix::{Actor, Context, System};
 
-// Actor definition
-struct Scraper;
+struct MyActor;
 
-impl Actor for Scraper {
+impl Actor for MyActor {
     type Context = Context<Self>;
-}
 
-impl Handler<Word> for Scraper {
-    type Result = Vec<String>; // <- Message response type
-
-    fn handle(&mut self, word: Word, _ctx: &mut Context<Self>) -> Self::Result {
+    fn started(&mut self, _ctx: &mut Self::Context) {
         let p3 = &MarianWebsterProvider {url: "".to_string()};
-        return p3.parse(word.0);
+        println!("{:?}",p3.parse("car".to_string()));        
+        System::current().stop(); // <- stop system
     }
 }
 
-#[actix::main] // <- starts the system and block until future resolves
-async fn main() {
-    let addr = Scraper.start();
-    let res = addr.send(Word("car".to_string())).await; // <- send message and get future for result
+fn main() {
+    let system = System::new();
 
-    match res {
-        Ok(result) => println!("WORD: {:?}", result),
-        _ => println!("Communication to the actor has failed"),
-    }
+    let _addr = system.block_on(async { MyActor.start() });
+
+    //system.run(); 
 }
+
