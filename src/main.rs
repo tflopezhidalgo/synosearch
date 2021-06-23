@@ -1,25 +1,65 @@
-mod parsing; 
+use actix::prelude::*;
 
-use parsing::{DummyProvider, Parser};
+fn parse_merian_webster(contents: String) -> Vec<String> {
+    let vec_class = contents.split("<ul class=\"mw-list\">").collect::<Vec<&str>>();
+    let vec_ul = vec_class[1].split("</ul>").collect::<Vec<&str>>();
+    let vec_il = vec_ul[0].split("<li>").collect::<Vec<&str>>();
 
-/* cantidad máxima de pedidos a webs de forma concurrente */
-const MAX_REQ_CONCURRENCY: u32 = 1;
+    let mut vec = Vec::new();
+    for s in vec_il {
+        let data = s.replace("\n", "");
+        let vec_data = data.split("\">").collect::<Vec<&str>>();
 
-/* TODO tomar params desde línea de comandos */
-/* TODO tiempo de espera entre dos requests consecutivas al mismo sitio */
+        if vec_data[0].contains("<a class=\"\" href=\"/thesaurus/") {
+            let word = vec_data[0].replace("<a class=\"\" href=\"/thesaurus/", "")
+                .replace(" ", "").replace("%20", " ");
+            println!("{}", word);
+            vec.push(word);
+        }
+    }
+    return vec;
+}
 
+async fn request_merian_webster(word: String) -> Result<Vec<String>, reqwest::Error> {
+    let url = format!("https://www.merriam-webster.com/thesaurus/{}", word);
+    let body = reqwest::get(url)
+        .await?
+        .text()
+        .await?;
+        //.unwrap().text().unwrap();
 
-fn main() {
-    let temp_1 = DummyProvider{
-        url: String::from("http://google.com")
-    };
-    let temp_2 = DummyProvider{
-        url: String::from("http://yahoo.com")
-    };
+    let response =  parse_merian_webster(body);
+    return Ok(response);
+} 
 
-    let providers: Vec<&Parser> = std::vec![&temp_1, &temp_2];
+// this is our Message
+// we have to define the response type (rtype)
+#[derive(Message)]
+#[rtype(result = "Vec<String>")]
+struct Parse(String);
 
-    for p in providers {
-        println!("{}", p.parse("car".to_string()));
+// Actor definition
+struct Scraper;
+
+impl Actor for Scraper {
+    type Context = Context<Self>;
+}
+
+impl Handler<Parse> for Scraper {
+    type Result = Vec<String>; // <- Message response type
+
+    fn handle(&mut self, msg: Parse, _ctx: &mut Context<Self>) -> Self::Result {
+        return request_merian_webster(msg.0);
+    }
+}
+
+#[actix::main] // <- starts the system and block until future resolves
+async fn main() {
+    let addr = Scraper.start();
+    let res = addr.send(Parse("car".to_string())).await; // <- send message and get future for result
+
+    match res {
+        Ok(result) => println!("WORD: {:?}", result),
+        _ => println!("Communication to the actor has failed"),
     }
 }
