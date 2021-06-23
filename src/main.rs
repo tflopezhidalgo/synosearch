@@ -31,6 +31,10 @@ fn pagina(w: Arc<String>, id: i32, sem: Arc<Semaphore>, cv: Arc<(Mutex<std::time
 
         let result = cvar.wait_timeout(last, timeout).unwrap();
 
+        /* Si llegamos hasta acá es porque alguien le hizo notify() o porque se cumplió el timeout
+         * de 3000 milis.
+         */
+
         let now = time::Instant::now();
 
         last = result.0; 
