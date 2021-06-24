@@ -14,61 +14,82 @@ use std_semaphore::Semaphore;
 use std::ops::Deref;
 use std::time::Duration;
 
-const REQ_TIMEOUT_SECS: u64 = 10;
-const MAX_CONCURRENCY: isize = 2;
+const NOTIFY_FRECUENCY: u64 = 1;
+const MIN_TIME_REQUESTS: u64 = 0;
+const MAX_CONCURRENCY: isize = 5;
+const MAX_PAGES: i32 = 3;
+
 static mut SEM_COUNT: i32 = 3;
+static mut COUNT: i32 = 0;
 
-fn pagina(w: Arc<String>, id: i32, sem: Arc<Semaphore>, cv: Arc<(Mutex<std::time::Instant>, Condvar)>) -> () {
 
-    let (lock, cvar) = &*cv;
+fn page(w: Arc<String>, id: i32, sem: Arc<Semaphore>, cv: Arc<(Mutex<std::time::Instant>, Condvar)>) -> () {
 
-    let mut last = lock.lock().unwrap();
+    println!("WORD: {} \t PAGE: {}", w, id);
+    println!("----> WORD: {} \t PAGE: {}", w, id);
 
-    loop {
+    if(MIN_TIME_REQUESTS == 0)
+    {
+        println!("Palabra {:?} pagina {:?} intentando tomar el semaforo", w, id);
+        sem.acquire();
+        println!("<-- Haciendo request de sinónimos de {:?} en página {:?} -->", w, id);
+        thread::sleep(Duration::from_millis(10000));
+        sem.release();
+        println!("##### La palabra {:?} termino de hacer el request en la página {:?} -->", w, id);
 
-        /* https://doc.rust-lang.org/nightly/std/sync/struct.Condvar.html#method.wait_timeout */
-        let timeout = time::Duration::from_millis(1000);
+    }
+    else {
+        let (lock, cvar) = &*cv;
+        let mut last = lock.lock().unwrap();
 
-        let result = cvar.wait_timeout(last, timeout).unwrap();
+        loop {
+            /* https://doc.rust-lang.org/nightly/std/sync/struct.Condvar.html#method.wait_timeout */
+            // A notify is sent every NOTIFY_FREQUENCY seconds
+            let timeout = time::Duration::from_millis(NOTIFY_FRECUENCY);
 
-        /* Si llegamos hasta acá es porque alguien le hizo notify() o porque se cumplió el timeout
-         * de 3000 milis.
-         */
-        let now = time::Instant::now();
+            let result = cvar.wait_timeout(last, timeout).unwrap();
 
-        last = result.0; 
+            /* Si llegamos hasta acá es porque alguien le hizo notify() o porque se cumplió el timeout
+             * de 3000 milis.
+             */
+            let now = time::Instant::now();
 
-        /* Si pasaron más de REQ_TIMEOUT_SECS salimos del loop */ 
-        if now.duration_since(*last).as_secs() > REQ_TIMEOUT_SECS {
-            break
+            last = result.0;
+
+            /* Si pasaron más de MIN_TIME_REQUESTS salimos del loop */
+            if now.duration_since(*last).as_secs() >= MIN_TIME_REQUESTS || MIN_TIME_REQUESTS == 0 {
+                println!("HERE");
+                break
+            }
         }
+
+        println!("Palabra {:?} pagina {:?} intentando tomar el semaforo", w, id);
+        sem.acquire();
+        println!("<-- Haciendo request de sinónimos de {:?} en página {:?} -->", w, id);
+        thread::sleep(Duration::from_millis(10000));
+        sem.release();
+        println!("##### La palabra {:?} termino de hacer el request en la página {:?} -->", w, id);
+
+        // Dejamos el último instante en que se ejecutó
+        *last = time::Instant::now();
+
+        cvar.notify_all();
     }
 
-    println!("Palabra {:?} pagina {:?} intentando tomar el semaforo", w, id);
-    sem.acquire();
-    println!("<-- Haciendo request de sinónimos de {:?} en página {:?} -->", w, id);
-    thread::sleep(Duration::from_millis(10000));
-    sem.release();
-    println!("##### La palabra {:?} termino de hacer el request en la página {:?} -->", w, id);
-
-    // Dejamos el último instante en que se ejecutó
-    *last = time::Instant::now();
-
-    cvar.notify_all();
 }
 
-fn palabra(w: Arc<String>, sem: Arc<Semaphore>, cvs: Arc<Vec<Arc<(Mutex<std::time::Instant>, Condvar)>>>) {
+fn word(w: Arc<String>, sem: Arc<Semaphore>, cvs: Arc<Vec<Arc<(Mutex<std::time::Instant>, Condvar)>>>) {
     println!("Buscando sinónimos para palabra: {:?}", w);
 
     let mut paginas : Vec<JoinHandle<()>> = vec!();
 
-    for i in 0..20 {
+    for i in 0..MAX_PAGES {
         let w = w.clone();
         let sem = sem.clone();
         let cvs = cvs.clone();
         paginas.push(
             thread::spawn(move || {
-                pagina(w, i, sem, cvs[i as usize].clone());
+                page(w, i, sem, cvs[i as usize].clone());
             })
         );
     }
@@ -82,21 +103,7 @@ fn main() {
     let sem = Arc::new(Semaphore::new(MAX_CONCURRENCY));
 
     let cvs = Arc::new(vec!(
-        // deberían iniciar en 0 
-        Arc::new((Mutex::new(time::Instant::now()), Condvar::new())),
-        Arc::new((Mutex::new(time::Instant::now()), Condvar::new())),
-        Arc::new((Mutex::new(time::Instant::now()), Condvar::new())),
-        Arc::new((Mutex::new(time::Instant::now()), Condvar::new())),
-        Arc::new((Mutex::new(time::Instant::now()), Condvar::new())),
-        Arc::new((Mutex::new(time::Instant::now()), Condvar::new())),
-        Arc::new((Mutex::new(time::Instant::now()), Condvar::new())),
-        Arc::new((Mutex::new(time::Instant::now()), Condvar::new())),
-        Arc::new((Mutex::new(time::Instant::now()), Condvar::new())),
-        Arc::new((Mutex::new(time::Instant::now()), Condvar::new())),
-        Arc::new((Mutex::new(time::Instant::now()), Condvar::new())),
-        Arc::new((Mutex::new(time::Instant::now()), Condvar::new())),
-        Arc::new((Mutex::new(time::Instant::now()), Condvar::new())),
-        Arc::new((Mutex::new(time::Instant::now()), Condvar::new())),
+        // deberían iniciar en 0
         Arc::new((Mutex::new(time::Instant::now()), Condvar::new())),
         Arc::new((Mutex::new(time::Instant::now()), Condvar::new())),
         Arc::new((Mutex::new(time::Instant::now()), Condvar::new())),
@@ -125,7 +132,7 @@ fn main() {
         let cvs = cvs.clone();
 
         w_threads.push(thread::spawn(move || {
-            palabra(current_w.clone(), sem, cvs);
+            word(current_w.clone(), sem, cvs);
         }));
     }
 
