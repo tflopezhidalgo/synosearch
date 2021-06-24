@@ -6,10 +6,11 @@ use std::ops::Deref;
 use std::time::Duration;
 
 const REQ_TIMEOUT_SECS: u64 = 10;
-const MAX_CONCURRENCY: isize = 2;
-static mut SEM_COUNT: i32 = 3;
+const MAX_CONCURRENCY: isize = 10;
+const MIN_WAITING_TIME: u64 =  1;
 
-fn pagina(w: Arc<String>, id: i32, sem: Arc<Semaphore>, cv: Arc<(Mutex<std::time::Instant>, Condvar)>) -> () {
+// TODO: La primera vez no deberían estar esperando el tiempo del timeout las pags
+fn page(w: Arc<String>, id: i32, cv: Arc<(Mutex<std::time::Instant>, Condvar)>) -> () {
 
     let (lock, cvar) = &*cv;
 
@@ -18,7 +19,7 @@ fn pagina(w: Arc<String>, id: i32, sem: Arc<Semaphore>, cv: Arc<(Mutex<std::time
     loop {
 
         /* https://doc.rust-lang.org/nightly/std/sync/struct.Condvar.html#method.wait_timeout */
-        let timeout = time::Duration::from_millis(1000);
+        let timeout = time::Duration::from_secs(MIN_WAITING_TIME);
 
         let result = cvar.wait_timeout(last, timeout).unwrap();
 
@@ -35,12 +36,12 @@ fn pagina(w: Arc<String>, id: i32, sem: Arc<Semaphore>, cv: Arc<(Mutex<std::time
         }
     }
 
-    println!("Palabra {:?} pagina {:?} intentando tomar el semaforo", w, id);
-    sem.acquire();
-    println!("<-- Haciendo request de sinónimos de {:?} en página {:?} -->", w, id);
-    thread::sleep(Duration::from_millis(10000));
-    sem.release();
-    println!("##### La palabra {:?} termino de hacer el request en la página {:?} -->", w, id);
+    println!("WORD: {:?} PAGE: {:?} \t TRYING TO ACQUIRE SEMAPHORE", w, id);
+
+    println!("WORD: {:?} PAGE: {:?} \t DOING REQUEST", w, id);
+    thread::sleep(Duration::from_secs(5));
+
+    println!("WORD: {:?} PAGE: {:?} \t FINISHED REQUEST", w, id);
 
     // Dejamos el último instante en que se ejecutó
     *last = time::Instant::now();
@@ -48,24 +49,24 @@ fn pagina(w: Arc<String>, id: i32, sem: Arc<Semaphore>, cv: Arc<(Mutex<std::time
     cvar.notify_all();
 }
 
-fn palabra(w: Arc<String>, sem: Arc<Semaphore>, cvs: Arc<Vec<Arc<(Mutex<std::time::Instant>, Condvar)>>>) {
-    println!("Buscando sinónimos para palabra: {:?}", w);
+fn word(w: Arc<String>, sem: Arc<Semaphore>, cvs: Arc<Vec<Arc<(Mutex<std::time::Instant>, Condvar)>>>) {
+    println!("WORD: {:?} \t\t\t SEARCHING SYNONYMS", w);
 
-    let mut paginas : Vec<JoinHandle<()>> = vec!();
+    let mut pages: Vec<JoinHandle<()>> = vec!();
 
-    for i in 0..20 {
+    for i in 0..3 {
         let w = w.clone();
         let sem = sem.clone();
         let cvs = cvs.clone();
-        paginas.push(
+        pages.push(
             thread::spawn(move || {
-                pagina(w, i, sem, cvs[i as usize].clone());
+                page(w, i, cvs[i as usize].clone());
             })
         );
     }
 
-    for pagina in paginas {
-        pagina.join();
+    for page in pages {
+        page.join();
     }
 }
 
@@ -76,35 +77,17 @@ fn main() {
         // deberían iniciar en 0 
         Arc::new((Mutex::new(time::Instant::now()), Condvar::new())),
         Arc::new((Mutex::new(time::Instant::now()), Condvar::new())),
-        Arc::new((Mutex::new(time::Instant::now()), Condvar::new())),
-        Arc::new((Mutex::new(time::Instant::now()), Condvar::new())),
-        Arc::new((Mutex::new(time::Instant::now()), Condvar::new())),
-        Arc::new((Mutex::new(time::Instant::now()), Condvar::new())),
-        Arc::new((Mutex::new(time::Instant::now()), Condvar::new())),
-        Arc::new((Mutex::new(time::Instant::now()), Condvar::new())),
-        Arc::new((Mutex::new(time::Instant::now()), Condvar::new())),
-        Arc::new((Mutex::new(time::Instant::now()), Condvar::new())),
-        Arc::new((Mutex::new(time::Instant::now()), Condvar::new())),
-        Arc::new((Mutex::new(time::Instant::now()), Condvar::new())),
-        Arc::new((Mutex::new(time::Instant::now()), Condvar::new())),
-        Arc::new((Mutex::new(time::Instant::now()), Condvar::new())),
-        Arc::new((Mutex::new(time::Instant::now()), Condvar::new())),
-        Arc::new((Mutex::new(time::Instant::now()), Condvar::new())),
-        Arc::new((Mutex::new(time::Instant::now()), Condvar::new())),
-        Arc::new((Mutex::new(time::Instant::now()), Condvar::new())),
-        Arc::new((Mutex::new(time::Instant::now()), Condvar::new())),
-        Arc::new((Mutex::new(time::Instant::now()), Condvar::new())),
-        Arc::new((Mutex::new(time::Instant::now()), Condvar::new())),
+        Arc::new((Mutex::new(time::Instant::now()), Condvar::new()))
     ));
 
     let words = Arc::new(vec!(
-        "palabra 1".to_string(),
-        "palabra 2".to_string(),
-        "palabra 3".to_string(),
-        "palabra 4".to_string(),
-        "palabra 5".to_string(),
-        "palabra 6".to_string(),
-        "palabra 7".to_string(),
+        1.to_string(),
+        2.to_string(),
+        3.to_string(),
+        4.to_string(),
+        5.to_string(),
+        6.to_string(),
+        7.to_string(),
     ));
 
     let mut w_threads : Vec<JoinHandle<()>> = vec!();
@@ -116,7 +99,7 @@ fn main() {
         let cvs = cvs.clone();
 
         w_threads.push(thread::spawn(move || {
-            palabra(current_w.clone(), sem, cvs);
+            word(current_w.clone(), sem, cvs);
         }));
     }
 
