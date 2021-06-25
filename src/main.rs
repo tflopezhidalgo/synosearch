@@ -1,12 +1,3 @@
-mod parsing;
-use parsing::{
-    ThesaurusProvider, 
-    YourDictionaryProvider, 
-    MarianWebsterProvider, 
-    Parser
-};
-
-
 use std::thread::{self, JoinHandle};
 use std::{time, vec};
 use std::sync::{Arc, Mutex, Condvar};
@@ -24,6 +15,21 @@ static MAX_PAGES: i32 = 3;
 
 fn main() {
 
+    let p1 = controller::parsing::ThesaurusProvider {url: "".to_string()};
+    let p2 = controller::parsing::YourDictionaryProvider {url: "".to_string()};
+    let p3 = controller::parsing::MarianWebsterProvider {url: "".to_string()};
+
+    let mut providers: Vec<Box<dyn controller::parsing::Parser>> = Vec::new();
+    providers.push(Box::new(p1));
+    providers.push(Box::new(p2));
+    providers.push(Box::new(p3));
+
+    //let providers: Vec<& dyn Parser> = vec![p1, p2, p3];
+
+    for p in &providers {
+        println!("{:?}", p.parse("car".to_string()));
+    }
+
     let words = Arc::new(vec!(
         "1".to_string(),
         "2".to_string(),
@@ -34,7 +40,7 @@ fn main() {
         "7".to_string(),
     ));
 
-    let mut controller = Controller::new(words);
+    let mut controller = Controller::new(words, providers);
 
     controller.process_words_concurrently();
 }
