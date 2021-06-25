@@ -5,56 +5,48 @@ use std_semaphore::Semaphore;
 use std::ops::Deref;
 use std::time::Duration;
 
-const REQ_TIMEOUT_SECS: u64 = 10;
+const REQ_TIMEOUT_SECS: u64 = 0;
 const MAX_CONCURRENCY: isize = 10;
-const MIN_WAITING_TIME: u64 =  1;
+const MIN_WAITING_TIME: u64 =  0;
 
 // TODO: La primera vez no deberían estar esperando el tiempo del timeout las pags
-fn page(w: Arc<String>, id: i32, cv: Arc<(Mutex<std::time::Instant>, Condvar)>) -> () {
+fn page(w: Arc<String>, id: i32, cv: Arc<(Mutex<(std::time::Instant, bool)>, Condvar)>) -> () {
 
     let (lock, cvar) = &*cv;
 
-    let mut last = lock.lock().unwrap();
+    { 
+        let mut last = lock.lock().unwrap();
 
-    loop {
+        loop {
+            /* https://doc.rust-lang.org/nightly/std/sync/struct.Condvar.html#method.wait_timeout */
+            let timeout = time::Duration::from_millis(MIN_WAITING_TIME);
 
-        /* https://doc.rust-lang.org/nightly/std/sync/struct.Condvar.html#method.wait_timeout */
-        let timeout = time::Duration::from_secs(MIN_WAITING_TIME);
+            let result = cvar.wait_timeout(last, timeout).unwrap();
 
-        let result = cvar.wait_timeout(last, timeout).unwrap();
+            let now = time::Instant::now();
 
-        /* Si llegamos hasta acá es porque alguien le hizo notify() o porque se cumplió el timeout
-         * de 3000 milis.
-         */
-        let now = time::Instant::now();
+            last = result.0;
 
-        last = result.0; 
-
-        /* Si pasaron más de REQ_TIMEOUT_SECS salimos del loop */ 
-        if now.duration_since(*last).as_secs() > REQ_TIMEOUT_SECS {
-            break
+            /* Si pasaron más de REQ_TIMEOUT_SECS salimos del loop */ 
+            if (now.duration_since((*last).0).as_secs() > REQ_TIMEOUT_SECS) && !(*last).1 {
+                break;
+            }
         }
     }
+    (*lock.lock().unwrap()).1 = true;
 
-    println!("WORD: {:?} PAGE: {:?} \t TRYING TO ACQUIRE SEMAPHORE", w, id);
-
-    println!("WORD: {:?} PAGE: {:?} \t DOING REQUEST", w, id);
-    thread::sleep(Duration::from_secs(5));
-
-    println!("WORD: {:?} PAGE: {:?} \t FINISHED REQUEST", w, id);
+    println!("Requesting...({:?} {:?})", w, id);
 
     // Dejamos el último instante en que se ejecutó
-    *last = time::Instant::now();
+    *lock.lock().unwrap() = (time::Instant::now(), false);
 
     cvar.notify_all();
 }
 
-fn word(w: Arc<String>, sem: Arc<Semaphore>, cvs: Arc<Vec<Arc<(Mutex<std::time::Instant>, Condvar)>>>) {
-    println!("WORD: {:?} \t\t\t SEARCHING SYNONYMS", w);
-
+fn word(w: Arc<String>, sem: Arc<Semaphore>, cvs: Arc<Vec<Arc<(Mutex<(std::time::Instant, bool)>, Condvar)>>>) {
     let mut pages: Vec<JoinHandle<()>> = vec!();
 
-    for i in 0..3 {
+    for i in 0..1 {
         let w = w.clone();
         let sem = sem.clone();
         let cvs = cvs.clone();
@@ -75,9 +67,9 @@ fn main() {
 
     let cvs = Arc::new(vec!(
         // deberían iniciar en 0 
-        Arc::new((Mutex::new(time::Instant::now()), Condvar::new())),
-        Arc::new((Mutex::new(time::Instant::now()), Condvar::new())),
-        Arc::new((Mutex::new(time::Instant::now()), Condvar::new()))
+        Arc::new((Mutex::new((time::Instant::now() - time::Duration::from_secs(100000), false)), Condvar::new())),
+        Arc::new((Mutex::new((time::Instant::now() - time::Duration::from_secs(100000), false)), Condvar::new())),
+        Arc::new((Mutex::new((time::Instant::now() - time::Duration::from_secs(100000), false)), Condvar::new()))
     ));
 
     let words = Arc::new(vec!(
