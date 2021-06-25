@@ -37,12 +37,12 @@ fn read_file_into_vector(filename: String) -> Vec<String> {
     return vec;
 }
 
-fn choose_mode(mode:String, word: String) {
+fn choose_mode(mode:String, filename: String) {
+    let _words = read_file_into_vector(filename);
     if mode.eq("actors") {
         println!("actors");
     } else if mode.eq("threads") {
         println!("threads");
-        read_file_into_vector(word);
     } else {
         try_mode();
     }
