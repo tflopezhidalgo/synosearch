@@ -127,7 +127,10 @@ impl Handler<AddrMsg> for WordGateKeeper {
 }
 
 struct PerWordWorker {
+    target: Arc<String>,
     gate_keeper: Arc<Addr<WordGateKeeper>>,
+    acum: Vec<String>,
+    lefting: u32,
 }
 
 impl Actor for PerWordWorker {
@@ -147,7 +150,12 @@ impl Handler<SVec> for PerWordWorker {
     type Result = ();
 
     fn handle(&mut self, msg: SVec, _ctx: &mut Context<Self>) -> Self::Result {
-        println!("{:p} recibio {:?}", self, msg.msg.len());
+        self.lefting -= 1;
+        self.acum.extend_from_slice(&msg.msg.clone());
+        if self.lefting == 0 {
+            println!("Palabra: {:?} tiene sinónimos:", self.target);
+            println!("{:?}", self.acum.join(", "));
+        }
     }
 }
 
@@ -178,10 +186,15 @@ fn main() {
             }
             .start());
 
-        let per_word_worker = PerWordWorker { gate_keeper: gatekeeper.clone() }.start();
-
         for w in words {
-            per_word_worker.do_send(Msg{ msg: w.clone() });
+            PerWordWorker { 
+                target: w.clone(), 
+                gate_keeper: gatekeeper.clone(),
+                lefting: 3,
+                acum: vec![]
+            }
+            .start()
+            .do_send(Msg{ msg: w.clone() });
         }
     });
 
