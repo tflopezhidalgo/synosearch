@@ -25,17 +25,16 @@ static MAX_PAGES: i32 = 3;
 fn main() {
 
     let words = Arc::new(vec!(
-        "palabra 1".to_string(),
-        "palabra 2".to_string(),
-        "palabra 3".to_string(),
-        "palabra 4".to_string(),
-        "palabra 5".to_string(),
-        "palabra 6".to_string(),
-        "palabra 7".to_string(),
+        "1".to_string(),
+        "2".to_string(),
+        "3".to_string(),
+        "4".to_string(),
+        "5".to_string(),
+        "6".to_string(),
+        "7".to_string(),
     ));
 
     let mut controller = Controller::new(words);
 
-    controller.spawn_word_threads();
-    controller.join_word_threads();
+    controller.process_words_concurrently();
 }
