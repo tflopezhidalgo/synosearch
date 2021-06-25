@@ -14,7 +14,8 @@ pub struct Word {
     /// The condition variables for each page
     condvars: Arc<Vec<Arc<(Mutex<std::time::Instant>, Condvar)>>>,
     /// The semaphore that limits the maximum amount of concurrent requests
-    sem: Arc<Semaphore>
+    sem: Arc<Semaphore>,
+    providers: Arc<Vec<Box<dyn crate::parsing::Parser + Send + Sync>>>
 }
 
 impl Word {
@@ -24,12 +25,14 @@ impl Word {
     /// * sem: The semaphore that limits the maximum amount of concurrent requests
     pub fn new(word: Arc<String>,
                condvars: Arc<Vec<Arc<(Mutex<std::time::Instant>, Condvar)>>>,
-               sem: Arc<Semaphore>) -> Word {
+               sem: Arc<Semaphore>,
+               providers: Arc<Vec<Box<dyn crate::parsing::Parser + Send + Sync>>>) -> Word {
         Word {
             word: word,
             sem: sem,
             condvars: condvars,
-            page_threads: vec!()
+            page_threads: vec!(),
+            providers: providers
         }
     }
 
@@ -45,8 +48,9 @@ impl Word {
             let word_clone = self.word.clone();
             let condvar_clone = self.condvars[i as usize].clone();
             let sem_clone = self.sem.clone();
+            let providers_clone = self.providers.clone();
 
-            let page = Page::new(word_clone, i, condvar_clone, sem_clone);
+            let page = Page::new(word_clone, i as usize, condvar_clone, sem_clone, providers_clone);
             self.page_threads.push(
                 thread::spawn(move || {
                     page.request();

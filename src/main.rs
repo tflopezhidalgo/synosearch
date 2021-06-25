@@ -1,9 +1,5 @@
-use std::thread::{self, JoinHandle};
-use std::{time, vec};
-use std::sync::{Arc, Mutex, Condvar};
-use std_semaphore::Semaphore;
-use std::ops::Deref;
-use std::time::{Duration, Instant};
+use std::{vec};
+use std::sync::{Arc};
 
 #[path = "threading/controller.rs"] mod controller;
 use controller::Controller;
@@ -27,28 +23,30 @@ fn main() {
     let p2 = YourDictionaryProvider {url: "".to_string()};
     let p3 = MarianWebsterProvider {url: "".to_string()};
 
-    let mut providers: Vec<Box<dyn Parser>> = Vec::new();
+    let mut providers: Vec<Box<dyn Parser + Send + Sync>> = Vec::new();
     providers.push(Box::new(p1));
     providers.push(Box::new(p2));
     providers.push(Box::new(p3));
 
+    let providers_arc = Arc::from(providers);
+
     //let providers: Vec<& dyn Parser> = vec![p1, p2, p3];
 
-    for p in &providers {
+   /* for p in &providers {
         println!("{:?}", p.parse("car".to_string()));
-    }
+    }*/
 
     let words = Arc::new(vec!(
-        "1".to_string(),
-        "2".to_string(),
-        "3".to_string(),
-        "4".to_string(),
-        "5".to_string(),
-        "6".to_string(),
-        "7".to_string(),
+        "car".to_string(),
+        "bus".to_string(),
+        "paper".to_string(),
+        "love".to_string(),
+        "computer".to_string(),
+        "key".to_string(),
+        "person".to_string(),
     ));
 
-    let mut controller = Controller::new(words, providers);
+    let controller = Controller::new(words, providers_arc);
 
     controller.process_words_concurrently();
 }

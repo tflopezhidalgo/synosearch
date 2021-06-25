@@ -1,19 +1,20 @@
-use std::thread::{self, JoinHandle};
+use std::thread::{self};
 use std::sync::{Arc, Mutex, Condvar};
 use std_semaphore::Semaphore;
-use std::{time, vec};
-use std::time::{Duration, Instant};
+use std::{time};
+use std::time::{Duration};
 
 
 pub struct Page {
     /// The word whose synonyms are to find
     word: Arc<String>,
     /// The id of the page
-    id: i32,
+    id: usize,
     /// The condition variable for the page
     condvar: Arc<(Mutex<std::time::Instant>, Condvar)>,
     /// The semaphore that limits the maximum amount of concurrent requests
-    sem: Arc<Semaphore>
+    sem: Arc<Semaphore>,
+    providers: Arc<Vec<Box<dyn crate::parsing::Parser + Send + Sync>>>
 }
 
 impl Page {
@@ -23,14 +24,16 @@ impl Page {
     /// * condvar: The condition variable for the page
     /// * sem: The semaphore that limits the maximum amount of concurrent requests
     pub fn new(word: Arc<String>,
-               id: i32,
+               id: usize,
                condvar: Arc<(Mutex<std::time::Instant>, Condvar)>,
-               sem: Arc<Semaphore>) -> Page {
+               sem: Arc<Semaphore>,
+               providers: Arc<Vec<Box<dyn crate::parsing::Parser + Send + Sync>>>) -> Page {
         Page {
             word: word,
             id: id,
             sem: sem,
-            condvar: condvar
+            condvar: condvar,
+            providers: providers
         }
     }
 
@@ -39,6 +42,11 @@ impl Page {
         println!("WORD {:?} \t PAGE {:?} \t TRYING TO DO A REQUEST", self.word, self.id);
         self.sem.acquire();
         println!("WORD {:?} \t PAGE {:?} \t DOING REQUEST ---------------", self.word, self.id);
+        let word_clone = self.word.clone();
+
+        println!("{}", word_clone.to_string());
+        println!("{:?}", self.providers[self.id].parse(word_clone.to_string()));
+
         thread::sleep(Duration::from_millis(10000));
         self.sem.release();
         println!("WORD {:?} \t PAGE {:?} \t FINISHED REQUEST", self.word, self.id);
@@ -56,16 +64,16 @@ impl Page {
 
         loop {
             /* https://doc.rust-lang.org/nightly/std/sync/struct.Condvar.html#method.wait_timeout */
-            /// A notify is sent every NOTIFY_FREQUENCY seconds
+            // A notify is sent every NOTIFY_FREQUENCY seconds
             let timeout = time::Duration::from_millis(crate::NOTIFY_FRECUENCY);
             let result = cvar.wait_timeout(last, timeout).unwrap();
 
-            /// At this point a notify() has been made or a timeout has occured
+            // At this point a notify() has been made or a timeout has occured
             let now = time::Instant::now();
 
             last = result.0;
 
-            /// Condition to go out of the loop
+            // Condition to go out of the loop
             if now.duration_since(*last).as_secs() >= crate::MIN_TIME_REQUESTS  {
                 println!("HERE");
                 break
@@ -79,7 +87,7 @@ impl Page {
 
     /// Handles the request to a page
     pub fn request(self) {
-        if (crate::MIN_TIME_REQUESTS == 0) {
+        if crate::MIN_TIME_REQUESTS == 0 {
             self.concurrent_request();
         }
         else {

@@ -5,7 +5,7 @@ use std::sync::{Arc, Mutex, Condvar};
 use std::thread::{self, JoinHandle};
 use std_semaphore::Semaphore;
 use std::{time, vec};
-use std::time::{Duration, Instant};
+use std::time::{Instant};
 
 /// Handles the main thread
 /// Spawns the thread for each word and controls the concurrency between them
@@ -18,13 +18,13 @@ pub struct Controller {
     condvars: Arc<Vec<Arc<(Mutex<Instant>, Condvar)>>>,
     /// The semaphore that limits the maximum amount of concurrent requests
     sem: Arc<Semaphore>,
-    providers: Vec<Box<dyn crate::parsing::Parser>>
+    providers: Arc<Vec<Box<dyn crate::parsing::Parser + Send + Sync>>>
 }
 
 impl Controller {
     /// Returns a Controller with the arguments given
     /// * words: The words whose synonyms are to find
-    pub fn new(words: Arc<Vec<String>>, providers: Vec<Box<dyn crate::parsing::Parser>>) -> Controller {
+    pub fn new(words: Arc<Vec<String>>, providers: Arc<Vec<Box<dyn crate::parsing::Parser + Send + Sync>>>) -> Controller {
         Controller {
             words: words,
             word_threads: vec![],
@@ -55,8 +55,9 @@ impl Controller {
             let word_clone = Arc::new(self.words[i].clone());
             let condvars_clone = self.condvars.clone();
             let sem_clone = self.sem.clone();
+            let providers_clone = self.providers.clone();
 
-            let mut word = Word::new(word_clone, condvars_clone, sem_clone);
+            let word = Word::new(word_clone, condvars_clone, sem_clone, providers_clone);
             self.word_threads.push(
                 thread::spawn(move || {
                     word.send_requests_to_pages_concurrently();
