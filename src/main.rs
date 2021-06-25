@@ -36,11 +36,8 @@ struct ParsingMessage {
 
 struct TheaurusWorker { }
 
-// TODO. sacarlo
 impl Actor for TheaurusWorker {
     type Context = SyncContext<Self>;
-
-    //fn started(&mut self, _ctx: &mut Self::Context) {}
 }
 
 impl Handler<ParsingMessage> for TheaurusWorker {
@@ -59,15 +56,12 @@ impl Handler<ParsingMessage> for TheaurusWorker {
 }
 
 struct WordGateKeeper {
-    //FIXME
     worker: Arc<Addr<TheaurusWorker>>, 
     qty_words: usize
 }
 
-// TODO. sacarlo
 impl Actor for WordGateKeeper {
     type Context = Context<Self>;
-    //fn started(&mut self, _ctx: &mut Self::Context) {}
 }
 
 impl Handler<Msg> for WordGateKeeper {
@@ -104,7 +98,6 @@ fn main() {
     let t_worker = thesaurus_worker.clone();
 
     system.block_on(async {
-        
         let gatekeeper = WordGateKeeper { worker: t_worker, qty_words: 3 }.start();
 
         for w in words {
