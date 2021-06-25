@@ -54,5 +54,5 @@ fn main() {
     if args.len() != 3 {
         process::exit(-1);
     }
-    choose_mode(args[0].clone(), args[1].clone());
+    choose_mode(args[1].clone(), args[2].clone());
 }
