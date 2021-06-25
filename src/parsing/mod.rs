@@ -17,6 +17,7 @@ impl Parser for ThesaurusProvider {
         let contents = reqwest::blocking::get(url).unwrap().text().unwrap();
 
         let vec_class = contents.split("e1ccqdb60\">").collect::<Vec<&str>>();
+        //println!("{:?}", vec_class);
         let vec_ul = vec_class[1].split("</ul>").collect::<Vec<&str>>();
         let vec_il = vec_ul[0].split("<!-- -->").collect::<Vec<&str>>();
 
