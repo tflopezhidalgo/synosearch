@@ -1,5 +1,4 @@
 #[path = "../threading/word.rs"] mod word;
-#[path = "../parsing/mod.rs"] pub mod parsing;
 
 use word::Word;
 use std::sync::{Arc, Mutex, Condvar};
@@ -19,13 +18,13 @@ pub struct Controller {
     condvars: Arc<Vec<Arc<(Mutex<Instant>, Condvar)>>>,
     /// The semaphore that limits the maximum amount of concurrent requests
     sem: Arc<Semaphore>,
-    providers: Vec<Box<dyn parsing::Parser>>
+    providers: Vec<Box<dyn crate::parsing::Parser>>
 }
 
 impl Controller {
     /// Returns a Controller with the arguments given
     /// * words: The words whose synonyms are to find
-    pub fn new(words: Arc<Vec<String>>, providers: Vec<Box<dyn parsing::Parser>>) -> Controller {
+    pub fn new(words: Arc<Vec<String>>, providers: Vec<Box<dyn crate::parsing::Parser>>) -> Controller {
         Controller {
             words: words,
             word_threads: vec![],

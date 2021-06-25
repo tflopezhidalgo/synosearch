@@ -8,6 +8,14 @@ use std::time::{Duration, Instant};
 #[path = "threading/controller.rs"] mod controller;
 use controller::Controller;
 
+mod parsing;
+use parsing::{
+    ThesaurusProvider,
+    YourDictionaryProvider,
+    MarianWebsterProvider,
+    Parser
+};
+
 static NOTIFY_FRECUENCY: u64 = 1;
 static MIN_TIME_REQUESTS: u64 = 1;
 static MAX_CONCURRENCY: isize = 5;
@@ -15,11 +23,11 @@ static MAX_PAGES: i32 = 3;
 
 fn main() {
 
-    let p1 = controller::parsing::ThesaurusProvider {url: "".to_string()};
-    let p2 = controller::parsing::YourDictionaryProvider {url: "".to_string()};
-    let p3 = controller::parsing::MarianWebsterProvider {url: "".to_string()};
+    let p1 = ThesaurusProvider {url: "".to_string()};
+    let p2 = YourDictionaryProvider {url: "".to_string()};
+    let p3 = MarianWebsterProvider {url: "".to_string()};
 
-    let mut providers: Vec<Box<dyn controller::parsing::Parser>> = Vec::new();
+    let mut providers: Vec<Box<dyn Parser>> = Vec::new();
     providers.push(Box::new(p1));
     providers.push(Box::new(p2));
     providers.push(Box::new(p3));
