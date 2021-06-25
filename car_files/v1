@@ -1,7 +1,0 @@
-var userDataContext = {
-  "deviceType": "Desktop",
-  "regionCode": "ROWLOatlantic",
-  "countryCode": "AR",
-  "isEU": false,
-  "isUS": false
-};
