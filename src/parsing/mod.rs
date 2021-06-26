@@ -7,13 +7,13 @@ pub trait Parser {
 
 /* -- theaurus -- */
 
-pub struct ThesaurusProvider {
-    pub url: String
-}
+pub struct ThesaurusProvider;
+
+const URL_THERASAURUS: &str = "https://www.thesaurus.com/browse/";
 
 impl Parser for ThesaurusProvider {
     fn parse(&self, target: String) -> Vec<String> {
-        let url = format!("https://www.thesaurus.com/browse/{}", target);
+        let url = format!("{}{}", URL_THERASAURUS, target);
         let contents = reqwest::blocking::get(url).unwrap().text().unwrap();
 
         let vec_class = contents.split("e1ccqdb60\">").collect::<Vec<&str>>();
@@ -35,14 +35,14 @@ impl Parser for ThesaurusProvider {
 
 /* -- yourdictonary -- */
 
-pub struct YourDictionaryProvider {
-    pub url: String
-}
+pub struct YourDictionaryProvider;
+
+const URL_YOURDICTIONARY: &str = "https://thesaurus.yourdictionary.com/";
 
 impl Parser for YourDictionaryProvider {
     fn parse(&self, target: String) -> Vec<String> {
         let client = reqwest::blocking::Client::new();
-        let url = format!("https://thesaurus.yourdictionary.com/{}", target);
+        let url = format!("{}{}", URL_YOURDICTIONARY, target);
         let res = client.get(url)
             .header(USER_AGENT, APP_USER_AGENT)
             .send();
@@ -67,13 +67,13 @@ impl Parser for YourDictionaryProvider {
 
 /* -- marian webster -- */
 
-pub struct MarianWebsterProvider {
-    pub url: String
-}
+pub struct MarrianWebsterProvider;
 
-impl Parser for MarianWebsterProvider {
+const URL_MARRIAM_WEBSTER: &str = "https://www.merriam-webster.com/thesaurus/";
+
+impl Parser for MarrianWebsterProvider {
     fn parse(&self, target: String) -> Vec<String> {
-        let url = format!("https://www.merriam-webster.com/thesaurus/{}", target);
+        let url = format!("{}{}", URL_MARRIAM_WEBSTER, target);
         let contents = reqwest::blocking::get(url).unwrap().text().unwrap();
 
         let vec_class = contents.split("<ul class=\"mw-list\">").collect::<Vec<&str>>();
@@ -88,7 +88,6 @@ impl Parser for MarianWebsterProvider {
             if vec_data[0].contains("<a class=\"\" href=\"/thesaurus/") {
                 let word = vec_data[0].replace("<a class=\"\" href=\"/thesaurus/", "")
                     .replace(" ", "").replace("%20", " ");
-                //println!("{}", _word);
                 vec.push(word);
             }
         }
