@@ -1,9 +1,12 @@
 mod parsing;
-mod logger;
-mod counter;
-mod file_reader;
+mod utils;
 
-use crate::counter::Counter;
+use utils::{
+    Counter,
+    FileReader,
+    Logger
+};
+
 use parsing::{
     ThesaurusProvider, 
     YourDictionaryProvider, 
@@ -11,10 +14,7 @@ use parsing::{
     Parser
 };
 
-use crate::logger::Logger;
-use crate::file_reader::FileReader;
 use std::{thread};
-
 use std::process;
 use std::env;
 
