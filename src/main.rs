@@ -1,6 +1,8 @@
 mod parsing;
 mod logger;
+mod counter;
 
+use crate::counter::Counter;
 use parsing::{
     ThesaurusProvider, 
     YourDictionaryProvider, 
@@ -11,7 +13,9 @@ use parsing::{
 use crate::logger::Logger;
 use std::{thread};
 
+
 const FILENAME: &str = "src/log.txt";
+
 
 
 fn main() {
@@ -40,8 +44,11 @@ fn main() {
     let p3 = &MarianWebsterProvider {url: "".to_string()};
 
     let providers: Vec<& dyn Parser> = vec![p1, p2, p3];
+    let mut synonimous = Vec::new();
 
     for p in providers {
-        println!("{:?}", p.parse("car".to_string()));
+        synonimous.append(&mut p.parse("car".to_string()));
     }
+
+    Counter::count(synonimous);
 }
