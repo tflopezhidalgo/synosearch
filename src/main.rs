@@ -6,7 +6,7 @@ use crate::counter::Counter;
 use parsing::{
     ThesaurusProvider, 
     YourDictionaryProvider, 
-    MarianWebsterProvider, 
+    MarrianWebsterProvider, 
     Parser
 };
 
@@ -39,9 +39,9 @@ fn main() {
     }
 
 
-    let p1 = &ThesaurusProvider {url: "".to_string()};
-    let p2 = &YourDictionaryProvider {url: "".to_string()};
-    let p3 = &MarianWebsterProvider {url: "".to_string()};
+    let p1 = &ThesaurusProvider;
+    let p2 = &YourDictionaryProvider;
+    let p3 = &MarrianWebsterProvider;
 
     let providers: Vec<& dyn Parser> = vec![p1, p2, p3];
     let mut synonimous = Vec::new();
