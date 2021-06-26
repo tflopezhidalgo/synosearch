@@ -28,9 +28,7 @@ use std::sync::{Arc, Mutex};
 
 
 fn main() {
-    let f = File::create("foo.txt");
-
-    let f = match f {
+    let f = match File::create("foo.txt") {
         Ok(file) => file,
         Err(error) => panic!("Problem creating the file: {:?}", error)
     };
@@ -56,10 +54,9 @@ fn main() {
     }
 
     for thread in threads {
-        let r = thread.join();
-        match r {
-                Ok(m) => m,
-                Err(error) => panic!("Problem creating the file: {:?}", error)
-            };
+        match thread.join() {
+            Ok(m) => m,
+            Err(error) => panic!("Problem creating the file: {:?}", error)
+        };
     }
 }
