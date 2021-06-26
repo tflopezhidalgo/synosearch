@@ -14,7 +14,15 @@ const URL_THERASAURUS: &str = "https://www.thesaurus.com/browse/";
 impl Parser for ThesaurusProvider {
     fn parse(&self, target: String) -> Vec<String> {
         let url = format!("{}{}", URL_THERASAURUS, target);
-        let contents = reqwest::blocking::get(url).unwrap().text().unwrap();
+        let request = match reqwest::blocking::get(url) {
+            Ok(request) => request,
+            Err(error) => panic!("Error request from Therasaurus: {:?}", error)
+        };
+
+        let contents = match request.text() {
+            Ok(contents) => contents,
+            Err(error) => panic!("Error reading request: {:?}", error)
+        };
 
         let vec_class = contents.split("e1ccqdb60\">").collect::<Vec<&str>>();
         let vec_ul = vec_class[1].split("</ul>").collect::<Vec<&str>>();
@@ -43,11 +51,18 @@ impl Parser for YourDictionaryProvider {
     fn parse(&self, target: String) -> Vec<String> {
         let client = reqwest::blocking::Client::new();
         let url = format!("{}{}", URL_YOURDICTIONARY, target);
-        let res = client.get(url)
+        let res = match client.get(url)
             .header(USER_AGENT, APP_USER_AGENT)
-            .send();
+            .send() {
+                Ok(request) => request,
+                Err(error) => panic!("Error request from Therasaurus: {:?}", error)
+            };
 
-        let contents = res.unwrap().text().unwrap();
+        let contents = match res.text() {
+            Ok(contents) => contents,
+            Err(error) => panic!("Error reading request: {:?}", error)
+        };
+
         let vec_class = contents.split("<div class=\"single-synonym-wrapper\" ").collect::<Vec<&str>>();
         let vec_ul = vec_class[1].split("</span></button></div></div></div> <!----></div></div> <!----></div></div>").collect::<Vec<&str>>();
         let vec_span = vec_ul[0].split("<!---->").collect::<Vec<&str>>(); 
@@ -74,7 +89,15 @@ const URL_MARRIAM_WEBSTER: &str = "https://www.merriam-webster.com/thesaurus/";
 impl Parser for MarrianWebsterProvider {
     fn parse(&self, target: String) -> Vec<String> {
         let url = format!("{}{}", URL_MARRIAM_WEBSTER, target);
-        let contents = reqwest::blocking::get(url).unwrap().text().unwrap();
+        let request = match reqwest::blocking::get(url) {
+            Ok(request) => request,
+            Err(error) => panic!("Error request from Therasaurus: {:?}", error)
+        };
+
+        let contents = match request.text() {
+            Ok(contents) => contents,
+            Err(error) => panic!("Error reading request: {:?}", error)
+        };
 
         let vec_class = contents.split("<ul class=\"mw-list\">").collect::<Vec<&str>>();
         let vec_ul = vec_class[1].split("</ul>").collect::<Vec<&str>>();
