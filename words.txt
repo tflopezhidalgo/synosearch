@@ -1,7 +1,1 @@
-car
-house
-bus
 paper
-computer
-key
-person
