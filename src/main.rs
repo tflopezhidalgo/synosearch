@@ -34,7 +34,7 @@ fn main() {
     for thread in threads {
         match thread.join() {
             Ok(m) => m,
-            Err(error) => panic!("Problem creating the file: {:?}", error)
+            Err(error) => panic!("Problem in join threads: {:?}", error)
         };
     }
 
