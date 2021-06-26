@@ -10,8 +10,11 @@ impl Counter {
             *entry += 1;
         }
 
+        /*
         for c in synonimous_counter {
             println!("{:?}", c);
         }
+        */
+        println!("{:?}", synonimous_counter);
     }
 }
