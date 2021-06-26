@@ -14,7 +14,7 @@ use parsing::{
 };
 
 static MIN_TIME_REQUESTS_SECS: u64 = 1;
-static MAX_CONCURRENCY: isize = 5;
+static MAX_CONCURRENCY: usize = 9;
 
 /* Messages */
 #[derive(Message)]
@@ -255,10 +255,12 @@ async fn main() {
     words.push(w2.clone());
     words.push(w3.clone());
     words.push(w4.clone());
+
+    let pool_threads = MAX_CONCURRENCY / 3;
     
-    let thesaurus_worker = Arc::new(SyncArbiter::start(5, || TheaurusWorker{}));
-    let marian_worker = Arc::new(SyncArbiter::start(5, || MarianWebsterWorker{}));
-    let your_dict_worker = Arc::new(SyncArbiter::start(5, || YourDictionaryWorker{}));
+    let thesaurus_worker = Arc::new(SyncArbiter::start(pool_threads, || TheaurusWorker{}));
+    let marian_worker = Arc::new(SyncArbiter::start(pool_threads, || MarianWebsterWorker{}));
+    let your_dict_worker = Arc::new(SyncArbiter::start(pool_threads, || YourDictionaryWorker{}));
 
     let m_gk = Arc::new(
         MarianWebGateKeeper{
