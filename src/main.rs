@@ -15,32 +15,32 @@ static MIN_TIME_REQUESTS_SECS: u64 = 1;
 static MAX_CONCURRENCY: usize = 1;
 
 /* Messages */
+
 #[derive(Message)]
 #[rtype(result = "()")]
-struct AddrMsg {
-    msg: Arc<String>,
-    source_addr: Arc<Addr<PerWordWorker>>
+struct SynonymRequest {
+    target: Arc<String>,
 }
 
 #[derive(Message)]
 #[rtype(result = "()")]
-struct Msg {
-    msg: Arc<String>,
+struct GatekeeperRequest {
+    target: Arc<String>,
+    response_addr: Arc<Addr<PerWordWorker>>
 }
-
 
 #[derive(Message)]
 #[rtype(result = "()")]
-struct AddrMsg_ {
+struct WorkerSynonymsRequest {
     _type: String,
-    msg: Arc<String>,
-    source_addr: Arc<Addr<PerWordWorker>>
+    target: Arc<String>,
+    response_addr: Arc<Addr<PerWordWorker>>
 }
 
 #[derive(Message)]
 #[rtype(result = "()")]
-struct SVec {
-    msg: Arc<Vec<String>>,
+struct SynonymsResult {
+    synonyms: Arc<Vec<String>>,
 }
 
 /* Actors */
@@ -51,16 +51,14 @@ impl Actor for Worker {
     type Context = SyncContext<Self>;
 }
 
-impl Handler<AddrMsg_> for Worker {
+impl Handler<WorkerSynonymsRequest> for Worker {
 
     type Result = ();
 
-    fn handle(&mut self, msg: AddrMsg_, _ctx: &mut SyncContext<Self>) -> Self::Result {
-        /* Busca sinónimo para una palabra en un determinado sitio */
+    fn handle(&mut self, request: WorkerSynonymsRequest, _ctx: &mut SyncContext<Self>) -> Self::Result {
+        let tmp = (*request.target).clone();
 
-        let tmp = (*msg.msg).clone();
-
-        if msg._type == "marian" {
+        if request._type == "marian" {
             let syn = Arc::new(
                 MarianWebsterProvider{ 
                     url: "".to_string() 
@@ -68,9 +66,9 @@ impl Handler<AddrMsg_> for Worker {
                 .parse(tmp.clone())
             );
 
-            msg.source_addr.try_send(SVec{ msg: syn }).unwrap()
+            request.response_addr.try_send(SynonymsResult{ synonyms: syn }).unwrap()
 
-        } else if msg._type == "thesaurus" {
+        } else if request._type == "thesaurus" {
             let syn = Arc::new(
                 ThesaurusProvider{ 
                     url: "".to_string() 
@@ -78,7 +76,7 @@ impl Handler<AddrMsg_> for Worker {
                 .parse(tmp.clone())
             );
 
-            msg.source_addr.try_send(SVec{ msg: syn }).unwrap()
+            request.response_addr.try_send(SynonymsResult{ synonyms: syn }).unwrap()
 
         } else {
             let syn = Arc::new(
@@ -88,7 +86,7 @@ impl Handler<AddrMsg_> for Worker {
                 .parse(tmp.clone())
             );
 
-            msg.source_addr.try_send(SVec{ msg: syn }).unwrap()
+            request.response_addr.try_send(SynonymsResult{ synonyms: syn }).unwrap()
         }
     }
 }
@@ -102,11 +100,11 @@ impl Actor for TWordGateKeeper {
     type Context = Context<Self>;
 }
 
-impl Handler<AddrMsg> for TWordGateKeeper {
+impl Handler<GatekeeperRequest> for TWordGateKeeper {
     type Result = ();
 
-    fn handle(&mut self, msg: AddrMsg, _ctx: &mut Context<Self>) -> Self::Result {
-        println!("[T] handling {:?}", msg.msg.clone());
+    fn handle(&mut self, msg: GatekeeperRequest, _ctx: &mut Context<Self>) -> Self::Result {
+        println!("[T] handling {:?}", msg.target.clone());
 
         let elapsed = std::time::Instant::now().duration_since(self.last).as_secs();
         if  elapsed < MIN_TIME_REQUESTS_SECS {
@@ -115,12 +113,12 @@ impl Handler<AddrMsg> for TWordGateKeeper {
             println!("[T] Awaking");
         }
 
-        println!("[T] Making request for {:?}", msg.msg.clone());
+        println!("[T] Making request for {:?}", msg.target.clone());
 
         self.worker.try_send(
-            AddrMsg_{ 
-                source_addr: msg.source_addr.clone(), 
-                msg: msg.msg.clone(),
+            WorkerSynonymsRequest{ 
+                response_addr: msg.response_addr.clone(), 
+                target: msg.target.clone(),
                 _type: "thesaurus".to_string(),
             }
         )
@@ -139,11 +137,11 @@ impl Actor for YourDictionaryGateKeeper {
     type Context = Context<Self>;
 }
 
-impl Handler<AddrMsg> for YourDictionaryGateKeeper {
+impl Handler<GatekeeperRequest> for YourDictionaryGateKeeper {
     type Result = ();
 
-    fn handle(&mut self, msg: AddrMsg, _ctx: &mut Context<Self>) -> Self::Result {
-        println!("[Y] handling {:?}", msg.msg.clone());
+    fn handle(&mut self, msg: GatekeeperRequest, _ctx: &mut Context<Self>) -> Self::Result {
+        println!("[Y] handling {:?}", msg.target.clone());
 
         let elapsed = std::time::Instant::now().duration_since(self.last).as_secs();
         if  elapsed < MIN_TIME_REQUESTS_SECS {
@@ -152,11 +150,11 @@ impl Handler<AddrMsg> for YourDictionaryGateKeeper {
             println!("[Y] Awaking");
         }
 
-        println!("[Y] Making request for {:?}", msg.msg.clone());
+        println!("[Y] Making request for {:?}", msg.target.clone());
         self.worker.try_send(
-            AddrMsg_{ 
-                source_addr: msg.source_addr.clone(), 
-                msg: msg.msg.clone(),
+            WorkerSynonymsRequest{ 
+                response_addr: msg.response_addr.clone(), 
+                target: msg.target.clone(),
                 _type: "yourdictionary".to_string(),
             }
         )
@@ -174,11 +172,11 @@ impl Actor for MarianWebGateKeeper {
     type Context = Context<Self>;
 }
 
-impl Handler<AddrMsg> for MarianWebGateKeeper {
+impl Handler<GatekeeperRequest> for MarianWebGateKeeper {
     type Result = ();
 
-    fn handle(&mut self, msg: AddrMsg, _ctx: &mut Context<Self>) -> Self::Result {
-        println!("[M] handling {:?}", msg.msg.clone());
+    fn handle(&mut self, msg: GatekeeperRequest, _ctx: &mut Context<Self>) -> Self::Result {
+        println!("[M] handling {:?}", msg.target.clone());
 
         let elapsed = std::time::Instant::now().duration_since(self.last).as_secs();
         if  elapsed < MIN_TIME_REQUESTS_SECS {
@@ -187,12 +185,12 @@ impl Handler<AddrMsg> for MarianWebGateKeeper {
             println!("[M] Awaking");
         }
 
-        println!("[M] Making request for {:?}", msg.msg.clone());
+        println!("[M] Making request for {:?}", msg.target.clone());
 
         self.worker.try_send(
-            AddrMsg_{ 
-                source_addr: msg.source_addr.clone(), 
-                msg: msg.msg.clone(),
+            WorkerSynonymsRequest{ 
+                response_addr: msg.response_addr.clone(), 
+                target: msg.target.clone(),
                 _type: "marian".to_string(),
             }
         )
@@ -214,33 +212,33 @@ impl Actor for PerWordWorker {
     type Context = Context<Self>;
 }
 
-impl Handler<Msg> for PerWordWorker {
+impl Handler<SynonymRequest> for PerWordWorker {
     type Result = ();
 
-    fn handle(&mut self, msg: Msg, _ctx: &mut Context<Self>) -> Self::Result {
-        println!("Asking synonym for {:?}", msg.msg);
+    fn handle(&mut self, request: SynonymRequest, _ctx: &mut Context<Self>) -> Self::Result {
+        println!("Asking synonym for {:?}", request.target);
         let me = Arc::new(_ctx.address());
-        self.target = msg.msg.clone();
+        self.target = request.target.clone();
 
-        self.t_gate_keeper.try_send(AddrMsg{ source_addr: me.clone(), msg: msg.msg.clone() }).unwrap();
+        self.t_gate_keeper.try_send(GatekeeperRequest{ response_addr: me.clone(), target: self.target.clone() }).unwrap();
         println!("Sended to [T]");
 
-        self.y_gate_keeper.try_send(AddrMsg{ source_addr: me.clone(), msg: msg.msg.clone() }).unwrap();
+        self.y_gate_keeper.try_send(GatekeeperRequest{ response_addr: me.clone(), target: self.target.clone() }).unwrap();
         println!("Sended to [Y]");
 
-        self.m_gate_keeper.try_send(AddrMsg{ source_addr: me.clone(), msg: msg.msg.clone() }).unwrap();
+        self.m_gate_keeper.try_send(GatekeeperRequest{ response_addr: me.clone(), target: self.target.clone() }).unwrap();
         println!("Sended to [M]");
     }
 }
 
-impl Handler<SVec> for PerWordWorker {
+impl Handler<SynonymsResult> for PerWordWorker {
     type Result = ();
 
-    fn handle(&mut self, msg: SVec, _ctx: &mut Context<Self>) -> Self::Result {
+    fn handle(&mut self, msg: SynonymsResult, _ctx: &mut Context<Self>) -> Self::Result {
         println!("*** sinonimos para {:?} recibidos", self.target);
         let mut tmp = self.lefting;
         tmp -= 1;
-        self.acum.extend_from_slice(&msg.msg.clone());
+        self.acum.extend_from_slice(&msg.synonyms.clone());
         self.lefting = tmp;
         if tmp == 0 {
             println!("Palabra: {:?} tiene sinónimos:", self.target);
@@ -295,7 +293,7 @@ async fn main() {
             acum: vec![]
         }
         .start()
-        .send(Msg{ msg: w.clone() }).await.unwrap();
+        .send(SynonymRequest{ target: w.clone() }).await.unwrap();
     }
 
     println!("stopping system...");
