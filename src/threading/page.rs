@@ -49,11 +49,11 @@ impl Page {
         let word_clone = self.word.clone();
 
         let vec = self.providers[self.id].parse(word_clone.to_string());
-        self.logger.write(format!("\nINFO: WORD {:?} \t PAGE {:?} \t SYNONYMS: {:?}\n", self.word, self. id, vec));
+        self.logger.write(format!("INFO: WORD {:?} \t PAGE {:?} \t SYNONYMS: {:?}\n", self.word, self. id, vec));
 
         thread::sleep(Duration::from_millis(10000));
         self.sem.release();
-        self.logger.write(format!("WORD {:?} \t PAGE {:?} \t FINISHED REQUEST\n", self.word, self.id));
+        self.logger.write(format!("INFO: WORD {:?} \t PAGE {:?} \t FINISHED REQUEST\n", self.word, self.id));
         return vec;
     }
 
