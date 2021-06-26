@@ -13,7 +13,7 @@ use parsing::{
     Parser
 };
 
-static MIN_TIME_REQUESTS_SECS: u64 = 10;
+static MIN_TIME_REQUESTS_SECS: u64 = 1;
 static MAX_CONCURRENCY: isize = 5;
 
 /* Messages */
@@ -21,7 +21,7 @@ static MAX_CONCURRENCY: isize = 5;
 #[rtype(result = "()")]
 struct AddrMsg {
     msg: Arc<String>,
-    source_addr: Addr<PerWordWorker>
+    source_addr: Arc<Addr<PerWordWorker>>
 }
 
 #[derive(Message)]
@@ -41,7 +41,6 @@ struct AddrMsg_ {
 #[derive(Message)]
 #[rtype(result = "()")]
 struct SVec {
-    web: Arc<String>,
     msg: Arc<Vec<String>>,
 }
 
@@ -65,8 +64,7 @@ impl Handler<AddrMsg_> for TheaurusWorker {
         println!("*** Worker [T] started parsing {:?}", tmp.clone());
         let syn = Arc::new(worker.parse(tmp.clone()));
         println!("Worker [T] sending to origin synonyms for word {:?}", tmp.clone());
-        let result = msg.source_addr.try_send(SVec{ msg: syn, web: Arc::new("Theaurus".to_string()) });
-        println!("{:?}", result);
+        msg.source_addr.try_send(SVec{ msg: syn }).unwrap()
     }
 }
 
@@ -88,7 +86,7 @@ impl Handler<AddrMsg_> for YourDictionaryWorker {
         println!("*** Worker [W] started parsing {:?}", tmp.clone());
         let syn = Arc::new(worker.parse(tmp.clone()));
         println!("Worker [W] sending to origin synonyms for word {:?}", tmp.clone());
-        msg.source_addr.try_send(SVec{ msg: syn, web: Arc::new("YourDictonary".to_string()) });
+        msg.source_addr.try_send(SVec{ msg: syn });
     }
 }
 
@@ -111,7 +109,7 @@ impl Handler<AddrMsg_> for MarianWebsterWorker {
         println!("*** Worker [M] started parsing {:?}", tmp.clone());
         let syn = Arc::new(worker.parse(tmp.clone()));
         println!("Worker [M] sending to origin synonyms for word {:?}", tmp.clone());
-        msg.source_addr.try_send(SVec{ msg: syn, web: Arc::new("Marian".to_string()) }).unwrap();
+        msg.source_addr.try_send(SVec{ msg: syn }).unwrap();
     }
 }
 
@@ -128,7 +126,6 @@ impl Handler<AddrMsg> for TWordGateKeeper {
     type Result = ();
 
     fn handle(&mut self, msg: AddrMsg, _ctx: &mut Context<Self>) -> Self::Result {
-        let source_addr = Arc::new(msg.source_addr);
         println!("[T] handling {:?}", msg.msg.clone());
 
         let elapsed = std::time::Instant::now().duration_since(self.last).as_secs();
@@ -139,7 +136,7 @@ impl Handler<AddrMsg> for TWordGateKeeper {
         }
 
         println!("[T] Making request for {:?}", msg.msg.clone());
-        self.worker.try_send(AddrMsg_{ source_addr: source_addr.clone(), msg: msg.msg.clone() }).unwrap();
+        self.worker.try_send(AddrMsg_{ source_addr: msg.source_addr.clone(), msg: msg.msg.clone() }).unwrap();
         self.last = std::time::Instant::now();
     }
 }
@@ -157,7 +154,6 @@ impl Handler<AddrMsg> for YourDictionaryGateKeeper {
     type Result = ();
 
     fn handle(&mut self, msg: AddrMsg, _ctx: &mut Context<Self>) -> Self::Result {
-        let source_addr = Arc::new(msg.source_addr);
         println!("[Y] handling {:?}", msg.msg.clone());
 
         let elapsed = std::time::Instant::now().duration_since(self.last).as_secs();
@@ -168,7 +164,7 @@ impl Handler<AddrMsg> for YourDictionaryGateKeeper {
         }
 
         println!("[Y] Making request for {:?}", msg.msg.clone());
-        self.worker.try_send(AddrMsg_{ source_addr: source_addr.clone(), msg: msg.msg.clone() }).unwrap();
+        self.worker.try_send(AddrMsg_{ source_addr: msg.source_addr.clone(), msg: msg.msg.clone() }).unwrap();
         self.last = std::time::Instant::now();
     }
 }
@@ -186,7 +182,6 @@ impl Handler<AddrMsg> for MarianWebGateKeeper {
     type Result = ();
 
     fn handle(&mut self, msg: AddrMsg, _ctx: &mut Context<Self>) -> Self::Result {
-        let source_addr = Arc::new(msg.source_addr);
         println!("[M] handling {:?}", msg.msg.clone());
 
         let elapsed = std::time::Instant::now().duration_since(self.last).as_secs();
@@ -197,7 +192,7 @@ impl Handler<AddrMsg> for MarianWebGateKeeper {
         }
 
         println!("[M] Making request for {:?}", msg.msg.clone());
-        self.worker.try_send(AddrMsg_{ source_addr: source_addr.clone(), msg: msg.msg.clone() }).unwrap();
+        self.worker.try_send(AddrMsg_{ source_addr: msg.source_addr.clone(), msg: msg.msg.clone() }).unwrap();
         self.last = std::time::Instant::now();
     }
 }
@@ -219,12 +214,13 @@ impl Handler<Msg> for PerWordWorker {
 
     fn handle(&mut self, msg: Msg, _ctx: &mut Context<Self>) -> Self::Result {
         println!("Asking synonym for {:?}", msg.msg);
+        let me = Arc::new(_ctx.address());
         self.target = msg.msg.clone();
-        self.t_gate_keeper.try_send(AddrMsg{ source_addr: _ctx.address(), msg: msg.msg.clone() }).unwrap();
+        self.t_gate_keeper.try_send(AddrMsg{ source_addr: me.clone(), msg: msg.msg.clone() }).unwrap();
         println!("Sended to [T]");
-        self.y_gate_keeper.try_send(AddrMsg{ source_addr: _ctx.address(), msg: msg.msg.clone() }).unwrap();
+        self.y_gate_keeper.try_send(AddrMsg{ source_addr: me.clone(), msg: msg.msg.clone() }).unwrap();
         println!("Sended to [Y]");
-        self.m_gate_keeper.try_send(AddrMsg{ source_addr: _ctx.address(), msg: msg.msg.clone() }).unwrap();
+        self.m_gate_keeper.try_send(AddrMsg{ source_addr: me.clone(), msg: msg.msg.clone() }).unwrap();
         println!("Sended to [M]");
     }
 }
@@ -251,12 +247,14 @@ async fn main() {
     let mut words = vec!();
 
     let w1 = Arc::new("house".to_string());
-    //let w2 = Arc::new("cat".to_string());
-    //let w3 = Arc::new("car".to_string());
+    let w2 = Arc::new("cat".to_string());
+    let w3 = Arc::new("car".to_string());
+    let w4 = Arc::new("-1".to_string());
 
     words.push(w1.clone());
-    //words.push(w2.clone());
-    //words.push(w3.clone());
+    words.push(w2.clone());
+    words.push(w3.clone());
+    words.push(w4.clone());
     
     let thesaurus_worker = Arc::new(SyncArbiter::start(5, || TheaurusWorker{}));
     let marian_worker = Arc::new(SyncArbiter::start(5, || MarianWebsterWorker{}));
@@ -281,26 +279,18 @@ async fn main() {
             last: std::time::Instant::now() - std::time::Duration::from_secs(10000)
         }.start());
 
-//    let mut w_workers: Vec<_> = vec!();
-
-    let a = PerWordWorker { 
-        target: Arc::new("".to_string()).clone(), 
-        t_gate_keeper: t_gk.clone(),
-        m_gate_keeper: m_gk.clone(),
-        y_gate_keeper: y_gk.clone(),
-        lefting: 3,
-        acum: vec![]
-    }
-    .start();
-
     for w in words {
-        println!("{:?} ***************** ", w);
-        a.send(Msg{ msg: w.clone() }).await.unwrap();
+        PerWordWorker { 
+            target: Arc::new("".to_string()).clone(), 
+            t_gate_keeper: t_gk.clone(),
+            m_gate_keeper: m_gk.clone(),
+            y_gate_keeper: y_gk.clone(),
+            lefting: 3,
+            acum: vec![]
+        }
+        .start()
+        .send(Msg{ msg: w.clone() }).await.unwrap();
     }
-
-    //w_workers.iter().map(|x| &x.await).collect::<Vec<_>>();
-
-    sleep(std::time::Duration::from_secs(100));
 
     println!("stopping system...");
     System::current().stop();
