@@ -3,8 +3,6 @@ mod parsing;
 use std::sync::Arc;
 use actix::prelude::*;
 use actix::{Actor, Context, System, SyncContext};
-use std::time::Instant;
-use std::thread::{self, sleep};
 
 use parsing::{
     ThesaurusProvider,
@@ -14,7 +12,7 @@ use parsing::{
 };
 
 static MIN_TIME_REQUESTS_SECS: u64 = 1;
-static MAX_CONCURRENCY: usize = 9;
+static MAX_CONCURRENCY: usize = 1;
 
 /* Messages */
 #[derive(Message)]
@@ -34,6 +32,7 @@ struct Msg {
 #[derive(Message)]
 #[rtype(result = "()")]
 struct AddrMsg_ {
+    _type: String,
     msg: Arc<String>,
     source_addr: Arc<Addr<PerWordWorker>>
 }
@@ -46,75 +45,56 @@ struct SVec {
 
 /* Actors */
 
-struct TheaurusWorker;
+struct Worker;
 
-impl Actor for TheaurusWorker {
+impl Actor for Worker {
     type Context = SyncContext<Self>;
 }
 
-impl Handler<AddrMsg_> for TheaurusWorker {
-
-    type Result = ();
-
-    fn handle(&mut self, msg: AddrMsg_, _ctx: &mut SyncContext<Self>) -> Self::Result {
-        /* Busca sinónimo para una palabra en un determinado sitio */
-        let worker = &ThesaurusProvider { url: "".to_string() };
-
-        let tmp = (*msg.msg).clone();
-        println!("*** Worker [T] started parsing {:?}", tmp.clone());
-        let syn = Arc::new(worker.parse(tmp.clone()));
-        println!("Worker [T] sending to origin synonyms for word {:?}", tmp.clone());
-        msg.source_addr.try_send(SVec{ msg: syn }).unwrap()
-    }
-}
-
-struct YourDictionaryWorker;
-
-impl Actor for YourDictionaryWorker {
-    type Context = SyncContext<Self>;
-}
-
-impl Handler<AddrMsg_> for YourDictionaryWorker {
-
-    type Result = ();
-
-    fn handle(&mut self, msg: AddrMsg_, _ctx: &mut SyncContext<Self>) -> Self::Result {
-        /* Busca sinónimo para una palabra en un determinado sitio */
-        let worker = &YourDictionaryProvider { url: "".to_string() };
-
-        let tmp = (*msg.msg).clone();
-        println!("*** Worker [W] started parsing {:?}", tmp.clone());
-        let syn = Arc::new(worker.parse(tmp.clone()));
-        println!("Worker [W] sending to origin synonyms for word {:?}", tmp.clone());
-        msg.source_addr.try_send(SVec{ msg: syn });
-    }
-}
-
-struct MarianWebsterWorker;
-
-impl Actor for MarianWebsterWorker {
-    type Context = SyncContext<Self>;
-}
-
-impl Handler<AddrMsg_> for MarianWebsterWorker {
+impl Handler<AddrMsg_> for Worker {
 
     type Result = ();
 
     fn handle(&mut self, msg: AddrMsg_, _ctx: &mut SyncContext<Self>) -> Self::Result {
         /* Busca sinónimo para una palabra en un determinado sitio */
 
-        let worker = &MarianWebsterProvider { url: "".to_string() };
-
         let tmp = (*msg.msg).clone();
-        println!("*** Worker [M] started parsing {:?}", tmp.clone());
-        let syn = Arc::new(worker.parse(tmp.clone()));
-        println!("Worker [M] sending to origin synonyms for word {:?}", tmp.clone());
-        msg.source_addr.try_send(SVec{ msg: syn }).unwrap();
+
+        if msg._type == "marian" {
+            let syn = Arc::new(
+                MarianWebsterProvider{ 
+                    url: "".to_string() 
+                }
+                .parse(tmp.clone())
+            );
+
+            msg.source_addr.try_send(SVec{ msg: syn }).unwrap()
+
+        } else if msg._type == "thesaurus" {
+            let syn = Arc::new(
+                ThesaurusProvider{ 
+                    url: "".to_string() 
+                }
+                .parse(tmp.clone())
+            );
+
+            msg.source_addr.try_send(SVec{ msg: syn }).unwrap()
+
+        } else {
+            let syn = Arc::new(
+                YourDictionaryProvider{ 
+                    url: "".to_string() 
+                }
+                .parse(tmp.clone())
+            );
+
+            msg.source_addr.try_send(SVec{ msg: syn }).unwrap()
+        }
     }
 }
 
 struct TWordGateKeeper { 
-    worker: Arc<Addr<TheaurusWorker>>,
+    worker: Arc<Addr<Worker>>,
     last: std::time::Instant,
 }
 
@@ -136,13 +116,22 @@ impl Handler<AddrMsg> for TWordGateKeeper {
         }
 
         println!("[T] Making request for {:?}", msg.msg.clone());
-        self.worker.try_send(AddrMsg_{ source_addr: msg.source_addr.clone(), msg: msg.msg.clone() }).unwrap();
+
+        self.worker.try_send(
+            AddrMsg_{ 
+                source_addr: msg.source_addr.clone(), 
+                msg: msg.msg.clone(),
+                _type: "thesaurus".to_string(),
+            }
+        )
+        .unwrap();
+
         self.last = std::time::Instant::now();
     }
 }
 
 struct YourDictionaryGateKeeper {
-    worker: Arc<Addr<YourDictionaryWorker>>,
+    worker: Arc<Addr<Worker>>,
     last: std::time::Instant,
 }
 
@@ -164,13 +153,20 @@ impl Handler<AddrMsg> for YourDictionaryGateKeeper {
         }
 
         println!("[Y] Making request for {:?}", msg.msg.clone());
-        self.worker.try_send(AddrMsg_{ source_addr: msg.source_addr.clone(), msg: msg.msg.clone() }).unwrap();
+        self.worker.try_send(
+            AddrMsg_{ 
+                source_addr: msg.source_addr.clone(), 
+                msg: msg.msg.clone(),
+                _type: "yourdictionary".to_string(),
+            }
+        )
+        .unwrap();
         self.last = std::time::Instant::now();
     }
 }
 
 struct MarianWebGateKeeper { 
-    worker: Arc<Addr<MarianWebsterWorker>>,
+    worker: Arc<Addr<Worker>>,
     last: std::time::Instant,
 }
 
@@ -192,7 +188,16 @@ impl Handler<AddrMsg> for MarianWebGateKeeper {
         }
 
         println!("[M] Making request for {:?}", msg.msg.clone());
-        self.worker.try_send(AddrMsg_{ source_addr: msg.source_addr.clone(), msg: msg.msg.clone() }).unwrap();
+
+        self.worker.try_send(
+            AddrMsg_{ 
+                source_addr: msg.source_addr.clone(), 
+                msg: msg.msg.clone(),
+                _type: "marian".to_string(),
+            }
+        )
+        .unwrap();
+
         self.last = std::time::Instant::now();
     }
 }
@@ -216,10 +221,13 @@ impl Handler<Msg> for PerWordWorker {
         println!("Asking synonym for {:?}", msg.msg);
         let me = Arc::new(_ctx.address());
         self.target = msg.msg.clone();
+
         self.t_gate_keeper.try_send(AddrMsg{ source_addr: me.clone(), msg: msg.msg.clone() }).unwrap();
         println!("Sended to [T]");
+
         self.y_gate_keeper.try_send(AddrMsg{ source_addr: me.clone(), msg: msg.msg.clone() }).unwrap();
         println!("Sended to [Y]");
+
         self.m_gate_keeper.try_send(AddrMsg{ source_addr: me.clone(), msg: msg.msg.clone() }).unwrap();
         println!("Sended to [M]");
     }
@@ -256,28 +264,24 @@ async fn main() {
     words.push(w3.clone());
     words.push(w4.clone());
 
-    let pool_threads = MAX_CONCURRENCY / 3;
-    
-    let thesaurus_worker = Arc::new(SyncArbiter::start(pool_threads, || TheaurusWorker{}));
-    let marian_worker = Arc::new(SyncArbiter::start(pool_threads, || MarianWebsterWorker{}));
-    let your_dict_worker = Arc::new(SyncArbiter::start(pool_threads, || YourDictionaryWorker{}));
+    let worker = Arc::new(SyncArbiter::start(MAX_CONCURRENCY, || Worker));
 
     let m_gk = Arc::new(
         MarianWebGateKeeper{
-            worker: marian_worker.clone(),
+            worker: worker.clone(),
             last: std::time::Instant::now() - std::time::Duration::from_secs(10000)
         }.start());
 
     let t_gk = Arc::new(
         TWordGateKeeper{
-            worker: thesaurus_worker.clone(),
+            worker: worker.clone(),
             last: std::time::Instant::now() - std::time::Duration::from_secs(10000)
         }.start());
 
 
     let y_gk = Arc::new(
         YourDictionaryGateKeeper{ 
-            worker: your_dict_worker.clone(),
+            worker: worker.clone(),
             last: std::time::Instant::now() - std::time::Duration::from_secs(10000)
         }.start());
 
