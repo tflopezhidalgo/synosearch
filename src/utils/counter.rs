@@ -5,7 +5,7 @@ use std::collections::HashMap;
 pub struct Counter;
 
 impl Counter {
-    pub fn count(synonimous: Vec<String>) { 
+    pub fn count(word: String, synonimous: Vec<String>) { 
         let mut synonimous_counter = HashMap::new();
         for s in synonimous {
             let entry = synonimous_counter.entry(s).or_insert(0);
@@ -17,6 +17,7 @@ impl Counter {
             println!("{:?}", c);
         }
         */
-        println!("{:?}", synonimous_counter);
+
+        println!("WORD: {}\nSINONIMOUS: \n{:?}\n", word, synonimous_counter);
     }
 }

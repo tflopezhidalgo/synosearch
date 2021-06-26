@@ -1,4 +1,3 @@
-
 use std::sync::{Arc};
 use std::process;
 use std::env;
@@ -27,7 +26,7 @@ static MAX_CONCURRENCY: isize = 5;
 static MAX_PAGES: i32 = 3;
 const FILENAME: &str = "src/log.txt";
 
-fn choose_mode(mode:String, filename: String) {
+fn choose_mode(mode: String, filename: String) {
     let logger = Arc::from(Logger::new(FILENAME));
 
     let words = FileReader::new(filename, logger.clone()).get_words();
@@ -35,11 +34,11 @@ fn choose_mode(mode:String, filename: String) {
     if mode.eq("actors") {
         println!("actors");
     } else if mode.eq("threads") {
-        println!("threads");
+        println!("Run mode threads");
         logger.write("INFO: Run program mod threads\n".to_string());
         run_parsers(words, logger.clone());
     } else {
-
+        println!("Unknown mode\n");
     }
 }
 
@@ -57,7 +56,7 @@ fn run_parsers(words: Vec<String>, logger: Arc<Logger>) {
 
     let words_arc = Arc::from(words);
 
-    let controller = Controller::new(words_arc, providers_arc);
+    let controller = Controller::new(words_arc, providers_arc, logger);
 
     controller.process_words_concurrently();
 }

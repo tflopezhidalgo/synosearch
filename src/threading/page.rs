@@ -3,6 +3,7 @@ use std::sync::{Arc, Mutex, Condvar};
 use std_semaphore::Semaphore;
 use std::{time};
 use std::time::{Duration};
+use crate::Logger;
 
 
 pub struct Page {
@@ -14,7 +15,8 @@ pub struct Page {
     condvar: Arc<(Mutex<std::time::Instant>, Condvar)>,
     /// The semaphore that limits the maximum amount of concurrent requests
     sem: Arc<Semaphore>,
-    providers: Arc<Vec<Box<dyn crate::parsing::Parser + Send + Sync>>>
+    providers: Arc<Vec<Box<dyn crate::parsing::Parser + Send + Sync>>>,
+    logger: Arc<Logger>
 }
 
 impl Page {
@@ -27,29 +29,31 @@ impl Page {
                id: usize,
                condvar: Arc<(Mutex<std::time::Instant>, Condvar)>,
                sem: Arc<Semaphore>,
-               providers: Arc<Vec<Box<dyn crate::parsing::Parser + Send + Sync>>>) -> Page {
+               providers: Arc<Vec<Box<dyn crate::parsing::Parser + Send + Sync>>>,
+               logger: Arc<Logger>) -> Page {
         Page {
             word: word,
             id: id,
             sem: sem,
             condvar: condvar,
-            providers: providers
+            providers: providers,
+            logger: logger
         }
     }
 
     /// Sends a request
     fn send_request(&self) -> Vec<String> {
-        println!("WORD {:?} \t PAGE {:?} \t TRYING TO DO A REQUEST", self.word, self.id);
+        self.logger.write(format!("INFO: WORD {:?} \t PAGE {:?} \t TRYING TO DO A REQUEST\n", self.word, self.id));
         self.sem.acquire();
-        println!("WORD {:?} \t PAGE {:?} \t DOING REQUEST ---------------", self.word, self.id);
+        self.logger.write(format!("INFO: WORD {:?} \t PAGE {:?} \t DOING REQUEST\n", self.word, self.id));
         let word_clone = self.word.clone();
 
         let vec = self.providers[self.id].parse(word_clone.to_string());
-        println!("\nWORD {:?} \t PAGE {:?} \t SYNONYMS: {:?}", self.word, self. id, vec);
+        self.logger.write(format!("\nINFO: WORD {:?} \t PAGE {:?} \t SYNONYMS: {:?}\n", self.word, self. id, vec));
 
         thread::sleep(Duration::from_millis(10000));
         self.sem.release();
-        println!("WORD {:?} \t PAGE {:?} \t FINISHED REQUEST", self.word, self.id);
+        self.logger.write(format!("WORD {:?} \t PAGE {:?} \t FINISHED REQUEST\n", self.word, self.id));
         return vec;
     }
 
@@ -60,6 +64,7 @@ impl Page {
 
     /// Handles the request when at most one request per page can occur at a time
     fn blocking_request(self) -> Vec<String> {
+        self.logger.write("INFO: Get lock blocking request\n".to_string());
         let (lock, cvar) = &*self.condvar;
         let mut last = lock.lock().unwrap();
 
@@ -71,7 +76,6 @@ impl Page {
 
             // At this point a notify() has been made or a timeout has occured
             let now = time::Instant::now();
-
             last = result.0;
 
             // Condition to go out of the loop
@@ -82,6 +86,7 @@ impl Page {
 
         let vec = self.send_request();
         *last = time::Instant::now();
+        self.logger.write("INFO: ConVar notify all\n".to_string());
         cvar.notify_all();
         return vec;
     }
