@@ -38,27 +38,28 @@ impl Page {
     }
 
     /// Sends a request
-    fn send_request(&self) {
+    fn send_request(&self) -> Vec<String> {
         println!("WORD {:?} \t PAGE {:?} \t TRYING TO DO A REQUEST", self.word, self.id);
         self.sem.acquire();
         println!("WORD {:?} \t PAGE {:?} \t DOING REQUEST ---------------", self.word, self.id);
         let word_clone = self.word.clone();
 
-        println!("{}", word_clone.to_string());
-        println!("{:?}", self.providers[self.id].parse(word_clone.to_string()));
+        let vec = self.providers[self.id].parse(word_clone.to_string());
+        println!("\nWORD {:?} \t PAGE {:?} \t SYNONYMS: {:?}", self.word, self. id, vec);
 
         thread::sleep(Duration::from_millis(10000));
         self.sem.release();
         println!("WORD {:?} \t PAGE {:?} \t FINISHED REQUEST", self.word, self.id);
+        return vec;
     }
 
     /// Handles the request when more than one request per page can occur at a time
-    fn concurrent_request(self) {
-        self.send_request();
+    fn concurrent_request(self) -> Vec<String>{
+        self.send_request()
     }
 
     /// Handles the request when at most one request per page can occur at a time
-    fn blocking_request(self) {
+    fn blocking_request(self) -> Vec<String> {
         let (lock, cvar) = &*self.condvar;
         let mut last = lock.lock().unwrap();
 
@@ -75,23 +76,23 @@ impl Page {
 
             // Condition to go out of the loop
             if now.duration_since(*last).as_secs() >= crate::MIN_TIME_REQUESTS  {
-                println!("HERE");
                 break
             }
         }
 
-        self.send_request();
+        let vec = self.send_request();
         *last = time::Instant::now();
         cvar.notify_all();
+        return vec;
     }
 
     /// Handles the request to a page
-    pub fn request(self) {
+    pub fn request(self) -> Vec<String> {
         if crate::MIN_TIME_REQUESTS == 0 {
-            self.concurrent_request();
+            return self.concurrent_request();
         }
         else {
-            self.blocking_request();
+            return self.blocking_request();
         }
     }
 }

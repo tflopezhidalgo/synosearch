@@ -4,13 +4,14 @@ use std::thread::{self, JoinHandle};
 use std::sync::{Arc, Mutex, Condvar};
 use std_semaphore::Semaphore;
 
+
 /// Handles the thread of each word
 /// Spawns the thread for each page inside the word and controls the concurrency between them
 pub struct Word {
     /// The word whose synonyms are to find
     word: Arc<String>,
     /// The threads to process the synonym search for each word concurrently
-    page_threads: Vec<JoinHandle<()>>,
+    page_threads: Vec<JoinHandle<Vec<String>>>,
     /// The condition variables for each page
     condvars: Arc<Vec<Arc<(Mutex<std::time::Instant>, Condvar)>>>,
     /// The semaphore that limits the maximum amount of concurrent requests
@@ -53,7 +54,7 @@ impl Word {
             let page = Page::new(word_clone, i as usize, condvar_clone, sem_clone, providers_clone);
             self.page_threads.push(
                 thread::spawn(move || {
-                    page.request();
+                    page.request()
                 })
             );
         }
@@ -61,8 +62,11 @@ impl Word {
 
     /// Waits for each thread in page_threads to finish
     fn join_pages_threads(self) {
+        let mut synonimous = Vec::new();
         for page_thread in self.page_threads {
-            let _ = page_thread.join();
+            synonimous.append(&mut page_thread.join().unwrap());
         }
+        println!("\nWORD {:?} \t SYNONYMS:", self.word);
+        crate::Counter::count(synonimous);
     }
 }
