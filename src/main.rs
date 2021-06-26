@@ -15,25 +15,32 @@ use parsing::{
     Parser
 };
 
+mod utils;
+use utils::{
+    Counter,
+    FileReader,
+    Logger
+};
+
 static NOTIFY_FRECUENCY: u64 = 1;
 static MIN_TIME_REQUESTS: u64 = 1;
 static MAX_CONCURRENCY: isize = 5;
 static MAX_PAGES: i32 = 3;
 
 fn choose_mode(mode:String, filename: String) {
-    //let words = FileReader::new(filename).get_words();
+    let words = FileReader::new(filename).get_words();
 
     if mode.eq("actors") {
         println!("actors");
     } else if mode.eq("threads") {
         println!("threads");
-        run_parsers();
+        run_parsers(words);
     } else {
 
     }
 }
 
-fn run_parsers() {
+fn run_parsers(words: Vec<String>) {
     let p1 = ThesaurusProvider;
     let p2 = YourDictionaryProvider;
     let p3 = MarrianWebsterProvider;
@@ -45,17 +52,9 @@ fn run_parsers() {
 
     let providers_arc = Arc::from(providers);
 
-    let words = Arc::new(vec!(
-        "car".to_string()/*,
-        "bus".to_string(),
-        "paper".to_string(),
-        "love".to_string(),
-        "computer".to_string(),
-        "key".to_string(),
-        "person".to_string(),*/
-    ));
+    let words_arc = Arc::from(words);
 
-    let controller = Controller::new(words, providers_arc);
+    let controller = Controller::new(words_arc, providers_arc);
 
     controller.process_words_concurrently();
 }
