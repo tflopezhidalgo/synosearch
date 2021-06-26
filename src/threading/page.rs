@@ -86,7 +86,6 @@ impl Page {
 
         let vec = self.send_request();
         *last = time::Instant::now();
-        self.logger.write("INFO: ConVar notify all\n".to_string());
         cvar.notify_all();
         return vec;
     }

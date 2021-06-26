@@ -79,6 +79,6 @@ impl Word {
             synonimous.append(&mut page_thread.join().unwrap());
         }
         self.logger.write(format!("INFO: Get all synonimous from word {} and count", self.word));
-        Counter::count(self.word.to_string(), synonimous);
+        Counter::count(self.word.to_string(), synonimous, self.logger.clone());
     }
 }
