@@ -1,4 +1,4 @@
-use std::{vec};
+
 use std::sync::{Arc};
 use std::process;
 use std::env;
@@ -15,35 +15,38 @@ use parsing::{
     Parser
 };
 
-mod utils;
-use utils::{
-    Counter,
-    FileReader,
-    Logger
-};
+
+#[path = "utils/logger.rs"] mod logger;
+use logger::Logger;
+#[path = "utils/file_reader.rs"] mod file_reader;
+use file_reader::FileReader;
 
 static NOTIFY_FRECUENCY: u64 = 1;
 static MIN_TIME_REQUESTS: u64 = 1;
 static MAX_CONCURRENCY: isize = 5;
 static MAX_PAGES: i32 = 3;
+const FILENAME: &str = "src/log.txt";
 
 fn choose_mode(mode:String, filename: String) {
-    let words = FileReader::new(filename).get_words();
+    let logger = Arc::from(Logger::new(FILENAME));
+
+    let words = FileReader::new(filename, logger.clone()).get_words();
 
     if mode.eq("actors") {
         println!("actors");
     } else if mode.eq("threads") {
         println!("threads");
-        run_parsers(words);
+        logger.write("INFO: Run program mod threads\n".to_string());
+        run_parsers(words, logger.clone());
     } else {
 
     }
 }
 
-fn run_parsers(words: Vec<String>) {
-    let p1 = ThesaurusProvider;
-    let p2 = YourDictionaryProvider;
-    let p3 = MarrianWebsterProvider;
+fn run_parsers(words: Vec<String>, logger: Arc<Logger>) {
+    let p1 = ThesaurusProvider::new(logger.clone());
+    let p2 = YourDictionaryProvider::new(logger.clone());
+    let p3 = MarrianWebsterProvider::new(logger.clone());
 
     let mut providers: Vec<Box<dyn Parser + Send + Sync>> = Vec::new();
     providers.push(Box::new(p1));
