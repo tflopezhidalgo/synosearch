@@ -12,6 +12,9 @@ use parsing::{
     Parser
 };
 
+static MIN_TIME_REQUESTS_SECS: u64 = 1;
+static MAX_CONCURRENCY: isize = 5;
+
 /* Messages */
 #[derive(Message)]
 #[rtype(result = "()")]
@@ -103,32 +106,64 @@ impl Handler<AddrMsg_> for MarianWebsterWorker {
     }
 }
 
-struct WordGateKeeper {
-    //TODO. polymorphic vector
-    t_worker: Arc<Addr<TheaurusWorker>>, 
-    y_worker: Arc<Addr<YourDictionaryWorker>>, 
-    m_worker: Arc<Addr<MarianWebsterWorker>>, 
+struct TWordGateKeeper { 
+    worker: Arc<Addr<TheaurusWorker>>,
 }
 
-impl Actor for WordGateKeeper {
+impl Actor for TWordGateKeeper {
     type Context = Context<Self>;
 }
 
-impl Handler<AddrMsg> for WordGateKeeper {
+impl Handler<AddrMsg> for TWordGateKeeper {
     type Result = ();
 
     fn handle(&mut self, msg: AddrMsg, _ctx: &mut Context<Self>) -> Self::Result {
         let source_addr = Arc::new(msg.source_addr);
 
-        self.t_worker.do_send(AddrMsg_{ source_addr: source_addr.clone(), msg: msg.msg.clone() });
-        self.y_worker.do_send(AddrMsg_{ source_addr: source_addr.clone(), msg: msg.msg.clone() });
-        self.m_worker.do_send(AddrMsg_{ source_addr: source_addr.clone(), msg: msg.msg.clone() });
+        self.worker.do_send(AddrMsg_{ source_addr: source_addr.clone(), msg: msg.msg.clone() });
     }
 }
 
+struct YourDictionaryGateKeeper {
+    worker: Arc<Addr<YourDictionaryWorker>> 
+}
+
+impl Actor for YourDictionaryGateKeeper {
+    type Context = Context<Self>;
+}
+
+impl Handler<AddrMsg> for YourDictionaryGateKeeper {
+    type Result = ();
+
+    fn handle(&mut self, msg: AddrMsg, _ctx: &mut Context<Self>) -> Self::Result {
+        let source_addr = Arc::new(msg.source_addr);
+
+        self.worker.do_send(AddrMsg_{ source_addr: source_addr.clone(), msg: msg.msg.clone() });
+    }
+}
+
+struct MarianWebGateKeeper { 
+    worker: Arc<Addr<MarianWebsterWorker>> 
+}
+
+impl Actor for MarianWebGateKeeper {
+    type Context = Context<Self>;
+}
+
+impl Handler<AddrMsg> for MarianWebGateKeeper {
+    type Result = ();
+
+    fn handle(&mut self, msg: AddrMsg, _ctx: &mut Context<Self>) -> Self::Result {
+        let source_addr = Arc::new(msg.source_addr);
+
+        self.worker.do_send(AddrMsg_{ source_addr: source_addr.clone(), msg: msg.msg.clone() });
+    }
+}
 struct PerWordWorker {
     target: Arc<String>,
-    gate_keeper: Arc<Addr<WordGateKeeper>>,
+    t_gate_keeper: Arc<Addr<TWordGateKeeper>>,
+    y_gate_keeper: Arc<Addr<YourDictionaryGateKeeper>>,
+    m_gate_keeper: Arc<Addr<MarianWebGateKeeper>>,
     acum: Vec<String>,
     lefting: u32,
 }
@@ -142,7 +177,9 @@ impl Handler<Msg> for PerWordWorker {
 
     fn handle(&mut self, msg: Msg, _ctx: &mut Context<Self>) -> Self::Result {
         println!("Asking synonym for {:?}", msg.msg);
-        self.gate_keeper.do_send(AddrMsg{ source_addr: _ctx.address(), msg: msg.msg })
+        self.t_gate_keeper.do_send(AddrMsg{ source_addr: _ctx.address(), msg: msg.msg.clone() });
+        self.y_gate_keeper.do_send(AddrMsg{ source_addr: _ctx.address(), msg: msg.msg.clone() });
+        self.m_gate_keeper.do_send(AddrMsg{ source_addr: _ctx.address(), msg: msg.msg.clone() });
     }
 }
 
@@ -178,18 +215,16 @@ fn main() {
         let marian_worker = Arc::new(SyncArbiter::start(5, || MarianWebsterWorker{}));
         let your_dict_worker = Arc::new(SyncArbiter::start(5, || YourDictionaryWorker{}));
 
-        let gatekeeper = Arc::new(
-            WordGateKeeper {
-                t_worker: thesaurus_worker.clone(),
-                y_worker: your_dict_worker.clone(),
-                m_worker: marian_worker.clone()
-            }
-            .start());
+        let t_gk = Arc::new(TWordGateKeeper{worker: thesaurus_worker.clone()}.start());
+        let m_gk = Arc::new(MarianWebGateKeeper{worker: marian_worker.clone()}.start());
+        let y_gk = Arc::new(YourDictionaryGateKeeper{ worker: your_dict_worker.clone()}.start());
 
         for w in words {
             PerWordWorker { 
                 target: w.clone(), 
-                gate_keeper: gatekeeper.clone(),
+                t_gate_keeper: t_gk.clone(),
+                m_gate_keeper: m_gk.clone(),
+                y_gate_keeper: y_gk.clone(),
                 lefting: 3,
                 acum: vec![]
             }
@@ -200,5 +235,6 @@ fn main() {
 
     system.run().unwrap();
 
+    println!("stopping system...");
     System::current().stop();
 }
