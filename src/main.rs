@@ -28,21 +28,13 @@ static NOTIFY_FRECUENCY: u64 = 1;
 static MIN_TIME_REQUESTS_SECS: u64 = 1;
 static MAX_CONCURRENCY: usize = 5;
 static MAX_PAGES: i32 = 3;
-const FILENAME: &str = "src/log.txt";
+const LOG_FILENAME: &str = "src/log.txt";
 
 #[actix_rt::main]
 async fn run_actors(words: Vec<String>, logger: Arc<Logger>) {
-    let mut words = vec![];
-
-    let w1 = Arc::new("house".to_string());
-    let w2 = Arc::new("cat".to_string());
-    let w3 = Arc::new("car".to_string());
-    let w4 = Arc::new("-1".to_string());
-
-    words.push(w1.clone());
-    words.push(w2.clone());
-    words.push(w3.clone());
-    words.push(w4.clone());
+    let mut words_arc = vec![];
+    for w in words { words_arc.push(Arc::new(w)); }
+    words_arc.push(Arc::new("-1".to_string()));
 
     let worker = Arc::new(SyncArbiter::start(MAX_CONCURRENCY, || Worker));
 
@@ -81,7 +73,7 @@ async fn run_actors(words: Vec<String>, logger: Arc<Logger>) {
 
     let gatekeepers = Arc::new(gatekeepers);
 
-    for w in words {
+    for w in words_arc {
         PerWordWorker {
             target: Arc::new("".to_string()).clone(),
             gatekeepers: gatekeepers.clone(),
@@ -99,23 +91,23 @@ async fn run_actors(words: Vec<String>, logger: Arc<Logger>) {
 }
 
 fn choose_mode(mode: String, filename: String) {
-    let logger = Arc::from(Logger::new(FILENAME));
+    let logger = Arc::from(Logger::new(LOG_FILENAME));
 
     let words = FileReader::new(filename, logger.clone()).get_words();
 
     if mode.eq("actors") {
-        println!("actors");
+        println!("Run mode actors");
         return run_actors(words, logger.clone());
     } else if mode.eq("threads") {
         println!("Run mode threads");
         logger.write("INFO: Run program mod threads\n".to_string());
-        run_parsers(words, logger.clone());
+        run_threads(words, logger.clone());
     } else {
         println!("Unknown mode\n");
     }
 }
 
-fn run_parsers(words: Vec<String>, logger: Arc<Logger>) {
+fn run_threads(words: Vec<String>, logger: Arc<Logger>) {
     let p1 = ThesaurusProvider::new(logger.clone());
     let p2 = YourDictionaryProvider::new(logger.clone());
     let p3 = MerriamWebsterProvider::new(logger.clone());
