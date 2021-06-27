@@ -29,6 +29,8 @@ static MIN_TIME_REQUESTS_SECS: u64 = 1;
 static MAX_CONCURRENCY: usize = 5;
 static MAX_PAGES: i32 = 3;
 const LOG_FILENAME: &str = "log.txt";
+const RESULT_FILENAME: &str = "result.txt";
+
 
 #[actix_rt::main]
 async fn run_actors(words: Vec<String>, logger: Arc<Logger>) {
@@ -74,20 +76,23 @@ async fn run_actors(words: Vec<String>, logger: Arc<Logger>) {
 
     let gatekeepers = Arc::new(gatekeepers);
 
+            
+    let logger_result = Arc::from(Logger::new(RESULT_FILENAME));
     for w in words_arc {
         PerWordWorker {
             target: Arc::new("".to_string()).clone(),
             gatekeepers: gatekeepers.clone(),
             lefting: 3,
             acum: vec![],
-            logger: logger.clone()
+            logger: logger.clone(),
+            logger_result: logger_result.clone()
         }
         .start()
         .send(SynonymRequest { target: w.clone() })
         .await
         .unwrap();
     }
-
+    println!("Save result in file {}\n", RESULT_FILENAME);
     logger.write("INFO: stopping system...".to_string());
     System::current().stop();
 }

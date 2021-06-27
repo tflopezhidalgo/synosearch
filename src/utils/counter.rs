@@ -15,10 +15,7 @@ impl Counter {
         }
 
         
-        logger.write(format!(
-            "\nWORD: {}\nSINONIMOUS: \n",
-            word
-        ));
+        logger.write(format!("WORD: {}\nSINONIMOUS: \n", word));
 
         for c in &synonimous_counter {
             let key = c.0;
@@ -30,7 +27,7 @@ impl Counter {
             }
         }
         
-        logger.write(format!("\n\n"));
-        println!("WORD: {}\nSINONIMOUS: \n{:?}\n", word, synonimous_counter);
+        logger.write(format!("\n------------------\n"));
+        //println!("WORD: {}\nSINONIMOUS: \n{:?}\n", word, synonimous_counter);
     }
 }

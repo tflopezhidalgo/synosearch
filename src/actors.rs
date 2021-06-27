@@ -11,6 +11,7 @@ use crate::logger::Logger;
 use crate::messages::*;
 use crate::parsing::{MerriamWebsterProvider, Parser, ThesaurusProvider, YourDictionaryProvider};
 
+
 pub struct Worker;
 
 impl Actor for Worker {
@@ -106,6 +107,7 @@ pub struct PerWordWorker {
     pub acum: Vec<String>,
     pub lefting: u32,
     pub logger: Arc<Logger>,
+    pub logger_result: Arc<Logger>
 }
 
 impl Actor for PerWordWorker {
@@ -151,10 +153,12 @@ impl Handler<SynonymsResult> for PerWordWorker {
             self.logger.write(format!("INFO: Palabra: {:?} tiene sinónimos:\n", self.target));
             let tmp: String = (*self.target).clone();
             let tmp2 = self.acum.clone();
+        
+
             Counter::count(
                 tmp, 
                 tmp2,
-                self.logger.clone()
+                self.logger_result.clone()
             );
         }
     }
