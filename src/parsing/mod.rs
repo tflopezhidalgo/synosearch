@@ -23,9 +23,6 @@ impl ThesaurusProvider {
     }
 }
 
-
-
-
 const URL_THERASAURUS: &str = "https://www.thesaurus.com/browse/";
 
 impl Parser for ThesaurusProvider {
@@ -61,7 +58,6 @@ impl Parser for ThesaurusProvider {
         return vec;
     }
 }
-
 
 /* -- yourdictonary -- */
 
@@ -103,7 +99,9 @@ impl Parser for YourDictionaryProvider {
         let mut vec = Vec::new();
         for s in vec_span {
             if s.contains("class=\"synonym-link\" data-v-b5c08d74>") {
-                let split_word = s.split("class=\"synonym-link\" data-v-b5c08d74>").collect::<Vec<&str>>();
+                let split_word = s
+                    .split("class=\"synonym-link\" data-v-b5c08d74>")
+                    .collect::<Vec<&str>>();
                 let split_link = split_word[1].split("</").collect::<Vec<&str>>();
                 vec.push(split_link[0].to_string());
             }
@@ -113,24 +111,23 @@ impl Parser for YourDictionaryProvider {
     }
 }
 
-
 /* -- marian webster -- */
 
-pub struct MarrianWebsterProvider {
+pub struct MerriamWebsterProvider {
     logger: Arc<Logger>
 }
 
-impl MarrianWebsterProvider {
+impl MerriamWebsterProvider {
     pub fn new(logger: Arc<Logger>) -> Self {
-        MarrianWebsterProvider{logger}
+        MerriamWebsterProvider{logger}
     }
 }
 
-const URL_MARRIAM_WEBSTER: &str = "https://www.merriam-webster.com/thesaurus/";
+const URL_MERRIAM_WEBSTER: &str = "https://www.merriam-webster.com/thesaurus/";
 
-impl Parser for MarrianWebsterProvider {
+impl Parser for MerriamWebsterProvider {
     fn parse(&self, target: String) -> Vec<String> {
-        let url = format!("{}{}", URL_MARRIAM_WEBSTER, target);
+        let url = format!("{}{}", URL_MERRIAM_WEBSTER, target);
 
         self.logger.write(format!("{} MarrianWebster, WORD: {}\n", MESSAGE_INIT, url));
         let request = match reqwest::blocking::get(url) {
@@ -144,7 +141,9 @@ impl Parser for MarrianWebsterProvider {
             Err(error) => panic!("Error reading request from MarrianWebster: {:?}", error)
         };
 
-        let vec_class = contents.split("<ul class=\"mw-list\">").collect::<Vec<&str>>();
+        let vec_class = contents
+            .split("<ul class=\"mw-list\">")
+            .collect::<Vec<&str>>();
         let vec_ul = vec_class[1].split("</ul>").collect::<Vec<&str>>();
         let vec_il = vec_ul[0].split("<li>").collect::<Vec<&str>>();
 

@@ -1,0 +1,33 @@
+INFO: Read file with words
+INFO: Split file into vector
+INFO: Return vectors of words
+INFO: Get request from Therasaurus, WORD: https://www.thesaurus.com/browse/house
+INFO: Get request from YourDictionary, WORD: https://thesaurus.yourdictionary.com/house
+INFO: Get request from MarrianWebster, WORD: https://www.merriam-webster.com/thesaurus/house
+INFO: Get context request from MarrianWebster, WORD: house
+INFO: Get context request from YourDictionary, WORD: house
+INFO: Return synonimous from MarrianWebster, WORD: house
+INFO: Get context request from Therasaurus, WORD: house
+INFO: Return synonimous from YourDictionary, WORD: house
+INFO: Return synonimous from Therasaurus, WORD: house
+INFO: Get request from Therasaurus, WORD: https://www.thesaurus.com/browse/cat
+INFO: Get request from YourDictionary, WORD: https://thesaurus.yourdictionary.com/cat
+INFO: Get request from MarrianWebster, WORD: https://www.merriam-webster.com/thesaurus/cat
+INFO: Get context request from YourDictionary, WORD: cat
+INFO: Get context request from MarrianWebster, WORD: cat
+INFO: Return synonimous from MarrianWebster, WORD: cat
+INFO: Get context request from Therasaurus, WORD: cat
+INFO: Return synonimous from YourDictionary, WORD: cat
+INFO: Return synonimous from Therasaurus, WORD: cat
+INFO: Get request from Therasaurus, WORD: https://www.thesaurus.com/browse/car
+INFO: Get request from YourDictionary, WORD: https://thesaurus.yourdictionary.com/car
+INFO: Get request from MarrianWebster, WORD: https://www.merriam-webster.com/thesaurus/car
+INFO: Get context request from MarrianWebster, WORD: car
+INFO: Get context request from YourDictionary, WORD: car
+INFO: Return synonimous from MarrianWebster, WORD: car
+INFO: Return synonimous from YourDictionary, WORD: car
+INFO: Get context request from Therasaurus, WORD: car
+INFO: Return synonimous from Therasaurus, WORD: car
+INFO: Get request from Therasaurus, WORD: https://www.thesaurus.com/browse/-1
+INFO: Get request from YourDictionary, WORD: https://thesaurus.yourdictionary.com/-1
+INFO: Get request from MarrianWebster, WORD: https://www.merriam-webster.com/thesaurus/-1

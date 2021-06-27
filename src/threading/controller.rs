@@ -31,7 +31,7 @@ impl Controller {
             words: words,
             word_threads: vec![],
             condvars: Controller::init_condvars(),
-            sem: Arc::new(Semaphore::new(crate::MAX_CONCURRENCY)),
+            sem: Arc::new(Semaphore::new(crate::MAX_CONCURRENCY as isize)),
             providers: providers,
             logger: logger
         }
