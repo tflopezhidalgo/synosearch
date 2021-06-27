@@ -87,6 +87,7 @@ async fn run_actors(words: Vec<String>, logger: Arc<Logger>) {
             gatekeepers: gatekeepers.clone(),
             lefting: 3,
             acum: vec![],
+            logger: logger.clone()
         }
         .start()
         .send(SynonymRequest { target: w.clone() })

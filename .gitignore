@@ -1,3 +1,4 @@
 **/*.rs.bk
 /target
 .idea
+src/log.txt

@@ -1,9 +1,14 @@
-use actix::prelude::*;
-use actix::{Actor, Context, SyncContext};
 use std::sync::{Arc, Mutex};
 use std::vec;
 
+use actix::prelude::*;
+use actix::{Actor, Context, SyncContext};
+
+#[path = "./utils/counter.rs"]
+mod counter;
+
 use crate::logger::Logger;
+use counter::Counter;
 use crate::messages::*;
 use crate::parsing::{MerriamWebsterProvider, Parser, ThesaurusProvider, YourDictionaryProvider};
 
@@ -101,6 +106,7 @@ pub struct PerWordWorker {
     pub gatekeepers: Arc<Vec<Arc<Addr<Gatekeeper>>>>,
     pub acum: Vec<String>,
     pub lefting: u32,
+    pub logger: Arc<Logger>,
 }
 
 impl Actor for PerWordWorker {
@@ -111,7 +117,7 @@ impl Handler<SynonymRequest> for PerWordWorker {
     type Result = ();
 
     fn handle(&mut self, request: SynonymRequest, ctx: &mut Context<Self>) -> Self::Result {
-        println!("Asking synonym for {:?}", request.target);
+        self.logger.write(format!("Asking synonym for {:?}", request.target));
         let me = Arc::new(ctx.address());
         self.target = request.target.clone();
 
@@ -123,7 +129,7 @@ impl Handler<SynonymRequest> for PerWordWorker {
 
             match gatekeeper.try_send(gatekeeper_request) {
                 Ok(result) => {
-                    println!("Sended to [T]");
+                    self.logger.write("Sended to [T]".to_string());
                 }
                 Err(e) => {
                     panic!("No se pudo enviar el mensaje al gatekeeper");
@@ -143,8 +149,13 @@ impl Handler<SynonymsResult> for PerWordWorker {
         self.acum.extend_from_slice(&result.synonyms.clone());
         self.lefting = tmp;
         if tmp == 0 {
-            println!("Palabra: {:?} tiene sinónimos:", self.target);
-            println!("{:?}", self.acum.join(", "));
+            let tmp: String = (*self.target).clone();
+            let tmp2 = self.acum.clone();
+            let counter = Counter::count(
+                tmp, 
+                tmp2,
+                self.logger.clone()
+            );
         }
     }
 }
