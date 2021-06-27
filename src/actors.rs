@@ -1,9 +1,9 @@
-use std::sync::Arc;
 use actix::prelude::*;
 use actix::{Actor, Context, SyncContext};
+use std::sync::Arc;
 
 use crate::logger::Logger;
-use crate::messages::*; 
+use crate::messages::*;
 use crate::parsing::{MerriamWebsterProvider, Parser, ThesaurusProvider, YourDictionaryProvider};
 
 pub struct Worker;
@@ -72,13 +72,8 @@ impl Handler<GatekeeperRequest> for Gatekeeper {
             .duration_since(self.last)
             .as_secs();
         if elapsed < self.sleep_time {
-            println!(
-                "[T] Sleeping by {:?} secs.",
-                (self.sleep_time - elapsed)
-            );
-            std::thread::sleep(std::time::Duration::from_secs(
-                self.sleep_time - elapsed,
-            ));
+            println!("[T] Sleeping by {:?} secs.", (self.sleep_time - elapsed));
+            std::thread::sleep(std::time::Duration::from_secs(self.sleep_time - elapsed));
             println!("[T] Awaking");
         }
 

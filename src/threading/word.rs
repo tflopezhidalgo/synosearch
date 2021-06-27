@@ -1,13 +1,14 @@
-#[path = "../threading/page.rs"] mod page;
-#[path = "../utils/counter.rs"] mod counter;
+#[path = "../utils/counter.rs"]
+mod counter;
+#[path = "../threading/page.rs"]
+mod page;
 
+use crate::Logger;
 use counter::Counter;
 use page::Page;
+use std::sync::{Arc, Condvar, Mutex};
 use std::thread::{self, JoinHandle};
-use std::sync::{Arc, Mutex, Condvar};
 use std_semaphore::Semaphore;
-use crate::Logger;
-
 
 /// Handles the thread of each word
 /// Spawns the thread for each page inside the word and controls the concurrency between them
@@ -21,7 +22,7 @@ pub struct Word {
     /// The semaphore that limits the maximum amount of concurrent requests
     sem: Arc<Semaphore>,
     providers: Arc<Vec<Box<dyn crate::parsing::Parser + Send + Sync>>>,
-    logger: Arc<Logger>
+    logger: Arc<Logger>,
 }
 
 impl Word {
@@ -29,26 +30,30 @@ impl Word {
     /// * word: The word whose synonyms are to find
     /// * condvars: The condition variables for each page
     /// * sem: The semaphore that limits the maximum amount of concurrent requests
-    pub fn new(word: Arc<String>,
-               condvars: Arc<Vec<Arc<(Mutex<std::time::Instant>, Condvar)>>>,
-               sem: Arc<Semaphore>,
-               providers: Arc<Vec<Box<dyn crate::parsing::Parser + Send + Sync>>>,
-               logger: Arc<Logger>) -> Word {
+    pub fn new(
+        word: Arc<String>,
+        condvars: Arc<Vec<Arc<(Mutex<std::time::Instant>, Condvar)>>>,
+        sem: Arc<Semaphore>,
+        providers: Arc<Vec<Box<dyn crate::parsing::Parser + Send + Sync>>>,
+        logger: Arc<Logger>,
+    ) -> Word {
         Word {
             word: word,
             sem: sem,
             condvars: condvars,
-            page_threads: vec!(),
+            page_threads: vec![],
             providers: providers,
-            logger: logger
+            logger: logger,
         }
     }
 
     /// Creates a thread for sending a request to each page and waits for all of them to finish
     pub fn send_requests_to_pages_concurrently(mut self) {
-        self.logger.write("INFO: Spawn words threads Words\n".to_string());
+        self.logger
+            .write("INFO: Spawn words threads Words\n".to_string());
         self.spawn_pages_threads();
-        self.logger.write("INFO: Join words threads Words\n".to_string());
+        self.logger
+            .write("INFO: Join words threads Words\n".to_string());
         self.join_pages_threads();
     }
 
@@ -61,24 +66,33 @@ impl Word {
             let providers_clone = self.providers.clone();
             let logger_clone = self.logger.clone();
 
-            self.logger.write("INFO: Send request to page threads\n".to_string());
-            let page = Page::new(word_clone, i as usize, condvar_clone, sem_clone, providers_clone, logger_clone);
-            self.page_threads.push(
-                thread::spawn(move || {
-                    page.request()
-                })
+            self.logger
+                .write("INFO: Send request to page threads\n".to_string());
+            let page = Page::new(
+                word_clone,
+                i as usize,
+                condvar_clone,
+                sem_clone,
+                providers_clone,
+                logger_clone,
             );
+            self.page_threads
+                .push(thread::spawn(move || page.request()));
         }
     }
 
     /// Waits for each thread in page_threads to finish
     fn join_pages_threads(self) {
-        self.logger.write(format!("INFO: Join threads from word: {}\n", self.word));
+        self.logger
+            .write(format!("INFO: Join threads from word: {}\n", self.word));
         let mut synonimous = Vec::new();
         for page_thread in self.page_threads {
             synonimous.append(&mut page_thread.join().unwrap());
         }
-        self.logger.write(format!("INFO: Get all synonimous from word {} and count", self.word));
+        self.logger.write(format!(
+            "INFO: Get all synonimous from word {} and count",
+            self.word
+        ));
         Counter::count(self.word.to_string(), synonimous, self.logger.clone());
     }
 }

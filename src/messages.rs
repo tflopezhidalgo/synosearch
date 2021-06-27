@@ -1,6 +1,6 @@
-use std::sync::Arc;
-use actix::prelude::*;
 use crate::{actors::*, logger::Logger};
+use actix::prelude::*;
+use std::sync::Arc;
 
 #[derive(Message)]
 #[rtype(result = "()")]
@@ -21,7 +21,7 @@ pub struct WorkerSynonymsRequest {
     pub target: Arc<String>,
     pub response_addr: Arc<Addr<PerWordWorker>>,
     pub parser_key: String,
-    pub logger: Arc<Logger>
+    pub logger: Arc<Logger>,
 }
 
 #[derive(Message)]

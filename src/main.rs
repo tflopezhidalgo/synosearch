@@ -1,24 +1,27 @@
-mod parsing;
 mod actors;
 mod messages;
+mod parsing;
 
 use actix::prelude::*;
 
-use std::sync::Arc;
-use std::process;
 use std::env;
+use std::process;
+use std::sync::Arc;
 
 use crate::actors::{Gatekeeper, PerWordWorker, Worker};
-use crate::messages::{SynonymRequest};
+use crate::messages::SynonymRequest;
 use parsing::{MerriamWebsterProvider, Parser, ThesaurusProvider, YourDictionaryProvider};
 
-#[path = "threading/controller.rs"] mod controller;
+#[path = "threading/controller.rs"]
+mod controller;
 use controller::Controller;
 
-#[path = "utils/logger.rs"] mod logger;
+#[path = "utils/logger.rs"]
+mod logger;
 use logger::Logger;
 
-#[path = "utils/file_reader.rs"] mod file_reader;
+#[path = "utils/file_reader.rs"]
+mod file_reader;
 use file_reader::FileReader;
 
 static NOTIFY_FRECUENCY: u64 = 1;
@@ -50,7 +53,7 @@ async fn run_actors(words: Vec<String>, logger: Arc<Logger>) {
                 last: std::time::Instant::now() - std::time::Duration::from_secs(10000),
                 parser_key: "1".to_string(),
                 sleep_time: MIN_TIME_REQUESTS_SECS,
-                logger: logger.clone()
+                logger: logger.clone(),
             }
             .start(),
         ),
@@ -60,7 +63,7 @@ async fn run_actors(words: Vec<String>, logger: Arc<Logger>) {
                 last: std::time::Instant::now() - std::time::Duration::from_secs(10000),
                 parser_key: "2".to_string(),
                 sleep_time: MIN_TIME_REQUESTS_SECS,
-                logger: logger.clone()
+                logger: logger.clone(),
             }
             .start(),
         ),
@@ -70,7 +73,7 @@ async fn run_actors(words: Vec<String>, logger: Arc<Logger>) {
                 last: std::time::Instant::now() - std::time::Duration::from_secs(10000),
                 parser_key: "3".to_string(),
                 sleep_time: MIN_TIME_REQUESTS_SECS,
-                logger: logger.clone()
+                logger: logger.clone(),
             }
             .start(),
         ),

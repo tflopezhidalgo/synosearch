@@ -1,10 +1,9 @@
-use std::thread::{self};
-use std::sync::{Arc, Mutex, Condvar};
-use std_semaphore::Semaphore;
-use std::{time};
-use std::time::{Duration};
 use crate::Logger;
-
+use std::sync::{Arc, Condvar, Mutex};
+use std::thread::{self};
+use std::time;
+use std::time::Duration;
+use std_semaphore::Semaphore;
 
 pub struct Page {
     /// The word whose synonyms are to find
@@ -16,7 +15,7 @@ pub struct Page {
     /// The semaphore that limits the maximum amount of concurrent requests
     sem: Arc<Semaphore>,
     providers: Arc<Vec<Box<dyn crate::parsing::Parser + Send + Sync>>>,
-    logger: Arc<Logger>
+    logger: Arc<Logger>,
 }
 
 impl Page {
@@ -25,46 +24,61 @@ impl Page {
     /// * id: The id of the page
     /// * condvar: The condition variable for the page
     /// * sem: The semaphore that limits the maximum amount of concurrent requests
-    pub fn new(word: Arc<String>,
-               id: usize,
-               condvar: Arc<(Mutex<std::time::Instant>, Condvar)>,
-               sem: Arc<Semaphore>,
-               providers: Arc<Vec<Box<dyn crate::parsing::Parser + Send + Sync>>>,
-               logger: Arc<Logger>) -> Page {
+    pub fn new(
+        word: Arc<String>,
+        id: usize,
+        condvar: Arc<(Mutex<std::time::Instant>, Condvar)>,
+        sem: Arc<Semaphore>,
+        providers: Arc<Vec<Box<dyn crate::parsing::Parser + Send + Sync>>>,
+        logger: Arc<Logger>,
+    ) -> Page {
         Page {
             word: word,
             id: id,
             sem: sem,
             condvar: condvar,
             providers: providers,
-            logger: logger
+            logger: logger,
         }
     }
 
     /// Sends a request
     fn send_request(&self) -> Vec<String> {
-        self.logger.write(format!("INFO: WORD {:?} \t PAGE {:?} \t TRYING TO DO A REQUEST\n", self.word, self.id));
+        self.logger.write(format!(
+            "INFO: WORD {:?} \t PAGE {:?} \t TRYING TO DO A REQUEST\n",
+            self.word, self.id
+        ));
         self.sem.acquire();
-        self.logger.write(format!("INFO: WORD {:?} \t PAGE {:?} \t DOING REQUEST\n", self.word, self.id));
+        self.logger.write(format!(
+            "INFO: WORD {:?} \t PAGE {:?} \t DOING REQUEST\n",
+            self.word, self.id
+        ));
         let word_clone = self.word.clone();
 
         let vec = self.providers[self.id].parse(word_clone.to_string());
-        self.logger.write(format!("INFO: WORD {:?} \t PAGE {:?} \t SYNONYMS: {:?}\n", self.word, self. id, vec));
+        self.logger.write(format!(
+            "INFO: WORD {:?} \t PAGE {:?} \t SYNONYMS: {:?}\n",
+            self.word, self.id, vec
+        ));
 
         thread::sleep(Duration::from_millis(10000));
         self.sem.release();
-        self.logger.write(format!("INFO: WORD {:?} \t PAGE {:?} \t FINISHED REQUEST\n", self.word, self.id));
+        self.logger.write(format!(
+            "INFO: WORD {:?} \t PAGE {:?} \t FINISHED REQUEST\n",
+            self.word, self.id
+        ));
         return vec;
     }
 
     /// Handles the request when more than one request per page can occur at a time
-    fn concurrent_request(self) -> Vec<String>{
+    fn concurrent_request(self) -> Vec<String> {
         self.send_request()
     }
 
     /// Handles the request when at most one request per page can occur at a time
     fn blocking_request(self) -> Vec<String> {
-        self.logger.write("INFO: Get lock blocking request\n".to_string());
+        self.logger
+            .write("INFO: Get lock blocking request\n".to_string());
         let (lock, cvar) = &*self.condvar;
         let mut last = lock.lock().unwrap();
 
@@ -79,8 +93,8 @@ impl Page {
             last = result.0;
 
             // Condition to go out of the loop
-            if now.duration_since(*last).as_secs() >= crate::MIN_TIME_REQUESTS_SECS  {
-                break
+            if now.duration_since(*last).as_secs() >= crate::MIN_TIME_REQUESTS_SECS {
+                break;
             }
         }
 
@@ -94,8 +108,7 @@ impl Page {
     pub fn request(self) -> Vec<String> {
         if crate::MIN_TIME_REQUESTS_SECS == 0 {
             return self.concurrent_request();
-        }
-        else {
+        } else {
             return self.blocking_request();
         }
     }

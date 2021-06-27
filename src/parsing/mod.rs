@@ -4,7 +4,7 @@ use crate::Logger;
 use reqwest::header::USER_AGENT;
 const APP_USER_AGENT: &str = "curl/7.68.0";
 const MESSAGE_INIT: &str = "INFO: Get request from";
-const MESSAGE_GET_CONTEXT:  &str = "INFO: Get context request from";
+const MESSAGE_GET_CONTEXT: &str = "INFO: Get context request from";
 const MESSAGE_RETURN_SYNONIMOUS: &str = "INFO: Return synonimous from";
 
 pub trait Parser {
@@ -14,12 +14,12 @@ pub trait Parser {
 /* -- theaurus -- */
 
 pub struct ThesaurusProvider {
-    logger: Arc<Logger>
+    logger: Arc<Logger>,
 }
 
 impl ThesaurusProvider {
     pub fn new(logger: Arc<Logger>) -> Self {
-        ThesaurusProvider{logger}
+        ThesaurusProvider { logger }
     }
 }
 
@@ -29,17 +29,21 @@ impl Parser for ThesaurusProvider {
     fn parse(&self, target: String) -> Vec<String> {
         let url = format!("{}{}", URL_THERASAURUS, target);
 
-        self.logger.write(format!("{} Therasaurus, WORD: {}\n", MESSAGE_INIT, url));
+        self.logger
+            .write(format!("{} Therasaurus, WORD: {}\n", MESSAGE_INIT, url));
         let request = match reqwest::blocking::get(url) {
             Ok(request) => request,
-            Err(error) => panic!("Error request from Therasaurus: {:?}", error)
+            Err(error) => panic!("Error request from Therasaurus: {:?}", error),
         };
 
-        self.logger.write(format!("{} Therasaurus, WORD: {}\n", MESSAGE_GET_CONTEXT, target));
+        self.logger.write(format!(
+            "{} Therasaurus, WORD: {}\n",
+            MESSAGE_GET_CONTEXT, target
+        ));
 
         let contents = match request.text() {
             Ok(contents) => contents,
-            Err(error) => panic!("Error reading request from Therasaurus: {:?}", error)
+            Err(error) => panic!("Error reading request from Therasaurus: {:?}", error),
         };
 
         let vec_class = contents.split("e1ccqdb60\">").collect::<Vec<&str>>();
@@ -54,7 +58,10 @@ impl Parser for ThesaurusProvider {
                 vec.push(target);
             }
         }
-        self.logger.write(format!("{} Therasaurus, WORD: {}\n", MESSAGE_RETURN_SYNONIMOUS, target));
+        self.logger.write(format!(
+            "{} Therasaurus, WORD: {}\n",
+            MESSAGE_RETURN_SYNONIMOUS, target
+        ));
         return vec;
     }
 }
@@ -62,12 +69,12 @@ impl Parser for ThesaurusProvider {
 /* -- yourdictonary -- */
 
 pub struct YourDictionaryProvider {
-    logger: Arc<Logger>
+    logger: Arc<Logger>,
 }
 
 impl YourDictionaryProvider {
     pub fn new(logger: Arc<Logger>) -> Self {
-        YourDictionaryProvider{logger}
+        YourDictionaryProvider { logger }
     }
 }
 
@@ -77,24 +84,30 @@ impl Parser for YourDictionaryProvider {
     fn parse(&self, target: String) -> Vec<String> {
         let url = format!("{}{}", URL_YOURDICTIONARY, target);
 
-        self.logger.write(format!("{} YourDictionary, WORD: {}\n", MESSAGE_INIT, url));
+        self.logger
+            .write(format!("{} YourDictionary, WORD: {}\n", MESSAGE_INIT, url));
         let client = reqwest::blocking::Client::new();
-        let res = match client.get(url)
-            .header(USER_AGENT, APP_USER_AGENT)
-            .send() {
-                Ok(request) => request,
-                Err(error) => panic!("Error request from YourDictionary: {:?}", error)
-            };
-
-        self.logger.write(format!("{} YourDictionary, WORD: {}\n", MESSAGE_GET_CONTEXT, target));
-        let contents = match res.text() {
-            Ok(contents) => contents,
-            Err(error) => panic!("Error reading request from YourDictionary: {:?}", error)
+        let res = match client.get(url).header(USER_AGENT, APP_USER_AGENT).send() {
+            Ok(request) => request,
+            Err(error) => panic!("Error request from YourDictionary: {:?}", error),
         };
 
-        let vec_class = contents.split("<div class=\"single-synonym-wrapper\" ").collect::<Vec<&str>>();
-        let vec_ul = vec_class[1].split("</span></button></div></div></div> <!----></div></div> <!----></div></div>").collect::<Vec<&str>>();
-        let vec_span = vec_ul[0].split("<!---->").collect::<Vec<&str>>(); 
+        self.logger.write(format!(
+            "{} YourDictionary, WORD: {}\n",
+            MESSAGE_GET_CONTEXT, target
+        ));
+        let contents = match res.text() {
+            Ok(contents) => contents,
+            Err(error) => panic!("Error reading request from YourDictionary: {:?}", error),
+        };
+
+        let vec_class = contents
+            .split("<div class=\"single-synonym-wrapper\" ")
+            .collect::<Vec<&str>>();
+        let vec_ul = vec_class[1]
+            .split("</span></button></div></div></div> <!----></div></div> <!----></div></div>")
+            .collect::<Vec<&str>>();
+        let vec_span = vec_ul[0].split("<!---->").collect::<Vec<&str>>();
 
         let mut vec = Vec::new();
         for s in vec_span {
@@ -106,7 +119,10 @@ impl Parser for YourDictionaryProvider {
                 vec.push(split_link[0].to_string());
             }
         }
-        self.logger.write(format!("{} YourDictionary, WORD: {}\n", MESSAGE_RETURN_SYNONIMOUS, target));
+        self.logger.write(format!(
+            "{} YourDictionary, WORD: {}\n",
+            MESSAGE_RETURN_SYNONIMOUS, target
+        ));
         return vec;
     }
 }
@@ -114,12 +130,12 @@ impl Parser for YourDictionaryProvider {
 /* -- marian webster -- */
 
 pub struct MerriamWebsterProvider {
-    logger: Arc<Logger>
+    logger: Arc<Logger>,
 }
 
 impl MerriamWebsterProvider {
     pub fn new(logger: Arc<Logger>) -> Self {
-        MerriamWebsterProvider{logger}
+        MerriamWebsterProvider { logger }
     }
 }
 
@@ -129,16 +145,20 @@ impl Parser for MerriamWebsterProvider {
     fn parse(&self, target: String) -> Vec<String> {
         let url = format!("{}{}", URL_MERRIAM_WEBSTER, target);
 
-        self.logger.write(format!("{} MarrianWebster, WORD: {}\n", MESSAGE_INIT, url));
+        self.logger
+            .write(format!("{} MarrianWebster, WORD: {}\n", MESSAGE_INIT, url));
         let request = match reqwest::blocking::get(url) {
             Ok(request) => request,
-            Err(error) => panic!("Error request from MarrianWebster: {:?}", error)
+            Err(error) => panic!("Error request from MarrianWebster: {:?}", error),
         };
 
-        self.logger.write(format!("{} MarrianWebster, WORD: {}\n", MESSAGE_GET_CONTEXT, target));
+        self.logger.write(format!(
+            "{} MarrianWebster, WORD: {}\n",
+            MESSAGE_GET_CONTEXT, target
+        ));
         let contents = match request.text() {
             Ok(contents) => contents,
-            Err(error) => panic!("Error reading request from MarrianWebster: {:?}", error)
+            Err(error) => panic!("Error reading request from MarrianWebster: {:?}", error),
         };
 
         let vec_class = contents
@@ -153,12 +173,17 @@ impl Parser for MerriamWebsterProvider {
             let vec_data = data.split("\">").collect::<Vec<&str>>();
 
             if vec_data[0].contains("<a class=\"\" href=\"/thesaurus/") {
-                let word = vec_data[0].replace("<a class=\"\" href=\"/thesaurus/", "")
-                    .replace(" ", "").replace("%20", " ");
+                let word = vec_data[0]
+                    .replace("<a class=\"\" href=\"/thesaurus/", "")
+                    .replace(" ", "")
+                    .replace("%20", " ");
                 vec.push(word);
             }
         }
-        self.logger.write(format!("{} MarrianWebster, WORD: {}\n", MESSAGE_RETURN_SYNONIMOUS, target));
+        self.logger.write(format!(
+            "{} MarrianWebster, WORD: {}\n",
+            MESSAGE_RETURN_SYNONIMOUS, target
+        ));
         return vec;
     }
 }
