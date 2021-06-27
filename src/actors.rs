@@ -1,6 +1,7 @@
 use actix::prelude::*;
 use actix::{Actor, Context, SyncContext};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
+use std::vec;
 
 use crate::logger::Logger;
 use crate::messages::*;
@@ -22,30 +23,28 @@ impl Handler<WorkerSynonymsRequest> for Worker {
     ) -> Self::Result {
         let tmp = (*request.target).clone();
 
-        if request.parser_key == "1" {
-            let parser = &ThesaurusProvider::new(request.logger.clone());
-            let syn = Arc::new(parser.parse(tmp.clone()));
+        let parsers: Vec<Box<Arc<dyn Parser>>> = vec![
+            Box::new(Arc::new(ThesaurusProvider::new(request.logger.clone()))),
+            Box::new(Arc::new(YourDictionaryProvider::new(
+                request.logger.clone(),
+            ))),
+            Box::new(Arc::new(MerriamWebsterProvider::new(
+                request.logger.clone(),
+            ))),
+        ];
 
-            request
-                .response_addr
-                .try_send(SynonymsResult { synonyms: syn })
-                .unwrap();
-        } else if request.parser_key == "2" {
-            let parser = &YourDictionaryProvider::new(request.logger.clone());
-            let syn = Arc::new(parser.parse(tmp.clone()));
+        let syn = match request.parser_key.as_str() {
+            "1" => parsers[0].clone().parse(tmp.clone()),
+            "2" => parsers[1].clone().parse(tmp.clone()),
+            "3" => parsers[2].clone().parse(tmp.clone()),
+            _ => vec![],
+        };
 
-            request
-                .response_addr
-                .try_send(SynonymsResult { synonyms: syn })
-                .unwrap();
-        } else {
-            let parser = &MerriamWebsterProvider::new(request.logger.clone());
-            let syn = Arc::new(parser.parse(tmp.clone()));
-
-            request
-                .response_addr
-                .try_send(SynonymsResult { synonyms: syn })
-                .unwrap();
+        match request.response_addr.try_send(SynonymsResult {
+            synonyms: Arc::new(syn),
+        }) {
+            Ok(_) => {}
+            Err(_) => panic!("Error al enviar resultados de sinonimos"),
         }
     }
 }
@@ -79,16 +78,21 @@ impl Handler<GatekeeperRequest> for Gatekeeper {
 
         println!("[T] Making request for {:?}", msg.target.clone());
 
-        self.worker
-            .try_send(WorkerSynonymsRequest {
-                response_addr: msg.response_addr.clone(),
-                target: msg.target.clone(),
-                parser_key: self.parser_key.clone(),
-                logger: self.logger.clone(),
-            })
-            .unwrap();
+        let worker_request = WorkerSynonymsRequest {
+            response_addr: msg.response_addr.clone(),
+            target: msg.target.clone(),
+            parser_key: self.parser_key.clone(),
+            logger: self.logger.clone(),
+        };
 
-        self.last = std::time::Instant::now();
+        match self.worker.try_send(worker_request) {
+            Ok(_) => {
+                self.last = std::time::Instant::now();
+            }
+            Err(_) => {
+                panic!("No se pudo enviar request a los workers!");
+            }
+        }
     }
 }
 
@@ -106,18 +110,25 @@ impl Actor for PerWordWorker {
 impl Handler<SynonymRequest> for PerWordWorker {
     type Result = ();
 
-    fn handle(&mut self, request: SynonymRequest, _ctx: &mut Context<Self>) -> Self::Result {
+    fn handle(&mut self, request: SynonymRequest, ctx: &mut Context<Self>) -> Self::Result {
         println!("Asking synonym for {:?}", request.target);
-        let me = Arc::new(_ctx.address());
+        let me = Arc::new(ctx.address().recipient());
         self.target = request.target.clone();
 
-        for gk in self.gatekeepers.iter() {
-            gk.try_send(GatekeeperRequest {
+        for gatekeeper in self.gatekeepers.iter() {
+            let gatekeeper_request = GatekeeperRequest {
                 response_addr: me.clone(),
                 target: self.target.clone(),
-            })
-            .unwrap();
-            println!("Sended to [T]");
+            };
+
+            match gatekeeper.try_send(gatekeeper_request) {
+                Ok(result) => {
+                    println!("Sended to [T]");
+                }
+                Err(e) => {
+                    panic!("No se pudo enviar el mensaje al gatekeeper");
+                }
+            };
         }
     }
 }
@@ -125,11 +136,11 @@ impl Handler<SynonymRequest> for PerWordWorker {
 impl Handler<SynonymsResult> for PerWordWorker {
     type Result = ();
 
-    fn handle(&mut self, msg: SynonymsResult, _ctx: &mut Context<Self>) -> Self::Result {
+    fn handle(&mut self, result: SynonymsResult, _: &mut Context<Self>) -> Self::Result {
         println!("*** sinonimos para {:?} recibidos", self.target);
         let mut tmp = self.lefting;
         tmp -= 1;
-        self.acum.extend_from_slice(&msg.synonyms.clone());
+        self.acum.extend_from_slice(&result.synonyms.clone());
         self.lefting = tmp;
         if tmp == 0 {
             println!("Palabra: {:?} tiene sinónimos:", self.target);
