@@ -79,7 +79,7 @@ impl Page {
             last = result.0;
 
             // Condition to go out of the loop
-            if now.duration_since(*last).as_secs() >= crate::MIN_TIME_REQUESTS  {
+            if now.duration_since(*last).as_secs() >= crate::MIN_TIME_REQUESTS_SECS  {
                 break
             }
         }
@@ -92,7 +92,7 @@ impl Page {
 
     /// Handles the request to a page
     pub fn request(self) -> Vec<String> {
-        if crate::MIN_TIME_REQUESTS == 0 {
+        if crate::MIN_TIME_REQUESTS_SECS == 0 {
             return self.concurrent_request();
         }
         else {
