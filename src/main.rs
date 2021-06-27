@@ -1,13 +1,29 @@
 mod parsing;
 
 use actix::prelude::*;
-use actix::{Actor, Context, SyncContext, System};
+use actix::{Actor, Context, SyncContext};
+
 use std::sync::Arc;
+use std::process;
+use std::env;
 
-use parsing::{MarianWebsterProvider, Parser, ThesaurusProvider, YourDictionaryProvider};
+use parsing::{MerriamWebsterProvider, Parser, ThesaurusProvider, YourDictionaryProvider};
 
+mod utils;
+use utils::{
+    Counter,
+    FileReader,
+    Logger
+};
+
+#[path = "threading/controller.rs"] mod controller;
+use controller::Controller;
+
+static NOTIFY_FRECUENCY: u64 = 1;
 static MIN_TIME_REQUESTS_SECS: u64 = 1;
-static MAX_CONCURRENCY: usize = 1;
+static MAX_CONCURRENCY: usize = 5;
+static MAX_PAGES: i32 = 3;
+
 
 /* Messages */
 
@@ -57,9 +73,7 @@ impl Handler<WorkerSynonymsRequest> for Worker {
         let tmp = (*request.target).clone();
 
         if request.parser_key == "1" {
-            let parser = &ThesaurusProvider {
-                url: "".to_string(),
-            };
+            let parser = &ThesaurusProvider;
             let syn = Arc::new(parser.parse(tmp.clone()));
 
             request
@@ -67,9 +81,7 @@ impl Handler<WorkerSynonymsRequest> for Worker {
                 .try_send(SynonymsResult { synonyms: syn })
                 .unwrap();
         } else if request.parser_key == "2" {
-            let parser = &YourDictionaryProvider {
-                url: "".to_string(),
-            };
+            let parser = &YourDictionaryProvider;
             let syn = Arc::new(parser.parse(tmp.clone()));
 
             request
@@ -77,9 +89,7 @@ impl Handler<WorkerSynonymsRequest> for Worker {
                 .try_send(SynonymsResult { synonyms: syn })
                 .unwrap();
         } else {
-            let parser = &MarianWebsterProvider {
-                url: "".to_string(),
-            };
+            let parser = &MerriamWebsterProvider;
             let syn = Arc::new(parser.parse(tmp.clone()));
 
             request
@@ -181,7 +191,7 @@ impl Handler<SynonymsResult> for PerWordWorker {
 }
 
 #[actix_rt::main]
-async fn main() {
+async fn run_actors(words: Vec<String>) {
     let mut words = vec![];
 
     let w1 = Arc::new("house".to_string());
@@ -240,4 +250,45 @@ async fn main() {
 
     println!("stopping system...");
     System::current().stop();
+}
+
+fn choose_mode(mode:String, filename: String) {
+    let words = FileReader::new(filename).get_words();
+
+    if mode.eq("actors") {
+        println!("actors");
+        return run_actors(words);
+    } else if mode.eq("threads") {
+        println!("threads");
+        return run_parsers(words);
+    } else {
+
+    }
+}
+
+fn run_parsers(words: Vec<String>) {
+    let p1 = ThesaurusProvider;
+    let p2 = YourDictionaryProvider;
+    let p3 = MerriamWebsterProvider;
+
+    let mut providers: Vec<Box<dyn Parser + Send + Sync>> = Vec::new();
+    providers.push(Box::new(p1));
+    providers.push(Box::new(p2));
+    providers.push(Box::new(p3));
+
+    let providers_arc = Arc::from(providers);
+
+    let words_arc = Arc::from(words);
+
+    let controller = Controller::new(words_arc, providers_arc);
+
+    controller.process_words_concurrently();
+}
+
+fn main() {
+    let args: Vec<String> = env::args().collect();
+    if args.len() != 3 {
+        process::exit(-1);
+    }
+    choose_mode(args[1].clone(), args[2].clone())
 }
