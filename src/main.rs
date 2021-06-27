@@ -34,6 +34,7 @@ const LOG_FILENAME: &str = "src/log.txt";
 async fn run_actors(words: Vec<String>, logger: Arc<Logger>) {
     let mut words_arc = vec![];
     for w in words { words_arc.push(Arc::new(w)); }
+
     words_arc.push(Arc::new("-1".to_string()));
 
     let worker = Arc::new(SyncArbiter::start(MAX_CONCURRENCY, || Worker));
