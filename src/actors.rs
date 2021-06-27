@@ -80,7 +80,6 @@ impl Handler<GatekeeperRequest> for Gatekeeper {
         }
 
         self.logger.write(format!("INFO: [T] Making request for {:?}", msg.target.clone()));
-        //println!("[T] Making request for {:?}", msg.target.clone());
 
         let worker_request = WorkerSynonymsRequest {
             response_addr: msg.response_addr.clone(),
@@ -105,7 +104,7 @@ pub struct PerWordWorker {
     pub gatekeepers: Arc<Vec<Arc<Addr<Gatekeeper>>>>,
     pub acum: Vec<String>,
     pub lefting: u32,
-    logger: Arc<Logger>,
+    pub logger: Arc<Logger>,
 }
 
 impl Actor for PerWordWorker {
@@ -116,7 +115,7 @@ impl Handler<SynonymRequest> for PerWordWorker {
     type Result = ();
 
     fn handle(&mut self, request: SynonymRequest, ctx: &mut Context<Self>) -> Self::Result {
-        println!("Asking synonym for {:?}", request.target);
+        self.logger.write(format!("INFO: Asking synonym for {:?}", request.target));
         let me = Arc::new(ctx.address());
         self.target = request.target.clone();
 
@@ -128,7 +127,7 @@ impl Handler<SynonymRequest> for PerWordWorker {
 
             match gatekeeper.try_send(gatekeeper_request) {
                 Ok(_result) => {
-                    println!("Sended to [T]");
+                    self.logger.write(format!("INFO: Sended to [T]"));
                 }
                 Err(_e) => {
                     panic!("No se pudo enviar el mensaje al gatekeeper");
@@ -142,15 +141,14 @@ impl Handler<SynonymsResult> for PerWordWorker {
     type Result = ();
 
     fn handle(&mut self, result: SynonymsResult, _: &mut Context<Self>) -> Self::Result {
-        println!("*** sinonimos para {:?} recibidos", self.target);
+        self.logger.write(format!("INFO: *** sinonimos para {:?} recibidos", self.target));
         let mut tmp = self.lefting;
         tmp -= 1;
         self.acum.extend_from_slice(&result.synonyms.clone());
         self.lefting = tmp;
         if tmp == 0 {
-            println!("Palabra: {:?} tiene sinónimos:", self.target);
+            self.logger.write(format!("INFO: Palabra: {:?} tiene sinónimos:", self.target));
             Counter::count(self.target.to_string(), self.acum.clone(), self.logger.clone());
-            //println!("{:?}", self.acum.join(", "));
         }
     }
 }
