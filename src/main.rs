@@ -1,5 +1,4 @@
 mod parsing;
-mod utils;
 mod actors;
 mod messages;
 
@@ -10,20 +9,26 @@ use std::process;
 use std::env;
 
 use crate::actors::{Gatekeeper, PerWordWorker, Worker};
-use crate::messages::{SynonymRequest, SynonymsResult};
+use crate::messages::{SynonymRequest};
 use parsing::{MerriamWebsterProvider, Parser, ThesaurusProvider, YourDictionaryProvider};
-use utils::{Counter, FileReader};
 
 #[path = "threading/controller.rs"] mod controller;
 use controller::Controller;
+
+#[path = "utils/logger.rs"] mod logger;
+use logger::Logger;
+
+#[path = "utils/file_reader.rs"] mod file_reader;
+use file_reader::FileReader;
 
 static NOTIFY_FRECUENCY: u64 = 1;
 static MIN_TIME_REQUESTS_SECS: u64 = 1;
 static MAX_CONCURRENCY: usize = 5;
 static MAX_PAGES: i32 = 3;
+const FILENAME: &str = "src/log.txt";
 
 #[actix_rt::main]
-async fn run_actors(words: Vec<String>) {
+async fn run_actors(words: Vec<String>, logger: Arc<Logger>) {
     let mut words = vec![];
 
     let w1 = Arc::new("house".to_string());
@@ -44,7 +49,8 @@ async fn run_actors(words: Vec<String>) {
                 worker: worker.clone(),
                 last: std::time::Instant::now() - std::time::Duration::from_secs(10000),
                 parser_key: "1".to_string(),
-                sleep_time: MIN_TIME_REQUESTS_SECS
+                sleep_time: MIN_TIME_REQUESTS_SECS,
+                logger: logger.clone()
             }
             .start(),
         ),
@@ -53,7 +59,8 @@ async fn run_actors(words: Vec<String>) {
                 worker: worker.clone(),
                 last: std::time::Instant::now() - std::time::Duration::from_secs(10000),
                 parser_key: "2".to_string(),
-                sleep_time: MIN_TIME_REQUESTS_SECS
+                sleep_time: MIN_TIME_REQUESTS_SECS,
+                logger: logger.clone()
             }
             .start(),
         ),
@@ -62,7 +69,8 @@ async fn run_actors(words: Vec<String>) {
                 worker: worker.clone(),
                 last: std::time::Instant::now() - std::time::Duration::from_secs(10000),
                 parser_key: "3".to_string(),
-                sleep_time: MIN_TIME_REQUESTS_SECS
+                sleep_time: MIN_TIME_REQUESTS_SECS,
+                logger: logger.clone()
             }
             .start(),
         ),
@@ -87,24 +95,27 @@ async fn run_actors(words: Vec<String>) {
     System::current().stop();
 }
 
-fn choose_mode(mode:String, filename: String) {
-    let words = FileReader::new(filename).get_words();
+fn choose_mode(mode: String, filename: String) {
+    let logger = Arc::from(Logger::new(FILENAME));
+
+    let words = FileReader::new(filename, logger.clone()).get_words();
 
     if mode.eq("actors") {
         println!("actors");
-        return run_actors(words);
+        return run_actors(words, logger.clone());
     } else if mode.eq("threads") {
-        println!("threads");
-        return run_parsers(words);
+        println!("Run mode threads");
+        logger.write("INFO: Run program mod threads\n".to_string());
+        run_parsers(words, logger.clone());
     } else {
-
+        println!("Unknown mode\n");
     }
 }
 
-fn run_parsers(words: Vec<String>) {
-    let p1 = ThesaurusProvider;
-    let p2 = YourDictionaryProvider;
-    let p3 = MerriamWebsterProvider;
+fn run_parsers(words: Vec<String>, logger: Arc<Logger>) {
+    let p1 = ThesaurusProvider::new(logger.clone());
+    let p2 = YourDictionaryProvider::new(logger.clone());
+    let p3 = MerriamWebsterProvider::new(logger.clone());
 
     let mut providers: Vec<Box<dyn Parser + Send + Sync>> = Vec::new();
     providers.push(Box::new(p1));
@@ -115,7 +126,7 @@ fn run_parsers(words: Vec<String>) {
 
     let words_arc = Arc::from(words);
 
-    let controller = Controller::new(words_arc, providers_arc);
+    let controller = Controller::new(words_arc, providers_arc, logger);
 
     controller.process_words_concurrently();
 }

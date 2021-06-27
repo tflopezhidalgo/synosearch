@@ -6,6 +6,7 @@ use std::thread::{self, JoinHandle};
 use std_semaphore::Semaphore;
 use std::{time, vec};
 use std::time::{Instant};
+use crate::Logger;
 
 /// Handles the main thread
 /// Spawns the thread for each word and controls the concurrency between them
@@ -18,19 +19,21 @@ pub struct Controller {
     condvars: Arc<Vec<Arc<(Mutex<Instant>, Condvar)>>>,
     /// The semaphore that limits the maximum amount of concurrent requests
     sem: Arc<Semaphore>,
-    providers: Arc<Vec<Box<dyn crate::parsing::Parser + Send + Sync>>>
+    providers: Arc<Vec<Box<dyn crate::parsing::Parser + Send + Sync>>>,
+    logger: Arc<Logger>
 }
 
 impl Controller {
     /// Returns a Controller with the arguments given
     /// * words: The words whose synonyms are to find
-    pub fn new(words: Arc<Vec<String>>, providers: Arc<Vec<Box<dyn crate::parsing::Parser + Send + Sync>>>) -> Controller {
+    pub fn new(words: Arc<Vec<String>>, providers: Arc<Vec<Box<dyn crate::parsing::Parser + Send + Sync>>>, logger: Arc<Logger>) -> Controller {
         Controller {
             words: words,
             word_threads: vec![],
             condvars: Controller::init_condvars(),
             sem: Arc::new(Semaphore::new(crate::MAX_CONCURRENCY as isize)),
-            providers: providers
+            providers: providers,
+            logger: logger
         }
     }
 
@@ -45,7 +48,9 @@ impl Controller {
 
     /// Creates a thread for processing each word and waits for all of them to finish
     pub fn process_words_concurrently(mut self) {
+        self.logger.write("INFO: Spawn words threads Controller\n".to_string());
         self.spawn_word_threads();
+        self.logger.write("INFO: Join words threads Controller\n".to_string());
         self.join_word_threads();
     }
 
@@ -56,8 +61,11 @@ impl Controller {
             let condvars_clone = self.condvars.clone();
             let sem_clone = self.sem.clone();
             let providers_clone = self.providers.clone();
+            let logger_clone = self.logger.clone();
 
-            let word = Word::new(word_clone, condvars_clone, sem_clone, providers_clone);
+            let word = Word::new(word_clone, condvars_clone, sem_clone, providers_clone, logger_clone);
+
+            self.logger.write("INFO: Send request to words threads\n".to_string());
             self.word_threads.push(
                 thread::spawn(move || {
                     word.send_requests_to_pages_concurrently();

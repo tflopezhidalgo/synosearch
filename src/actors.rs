@@ -2,6 +2,7 @@ use std::sync::Arc;
 use actix::prelude::*;
 use actix::{Actor, Context, SyncContext};
 
+use crate::logger::Logger;
 use crate::messages::*; 
 use crate::parsing::{MerriamWebsterProvider, Parser, ThesaurusProvider, YourDictionaryProvider};
 
@@ -22,7 +23,7 @@ impl Handler<WorkerSynonymsRequest> for Worker {
         let tmp = (*request.target).clone();
 
         if request.parser_key == "1" {
-            let parser = &ThesaurusProvider;
+            let parser = &ThesaurusProvider::new(request.logger.clone());
             let syn = Arc::new(parser.parse(tmp.clone()));
 
             request
@@ -30,7 +31,7 @@ impl Handler<WorkerSynonymsRequest> for Worker {
                 .try_send(SynonymsResult { synonyms: syn })
                 .unwrap();
         } else if request.parser_key == "2" {
-            let parser = &YourDictionaryProvider;
+            let parser = &YourDictionaryProvider::new(request.logger.clone());
             let syn = Arc::new(parser.parse(tmp.clone()));
 
             request
@@ -38,7 +39,7 @@ impl Handler<WorkerSynonymsRequest> for Worker {
                 .try_send(SynonymsResult { synonyms: syn })
                 .unwrap();
         } else {
-            let parser = &MerriamWebsterProvider;
+            let parser = &MerriamWebsterProvider::new(request.logger.clone());
             let syn = Arc::new(parser.parse(tmp.clone()));
 
             request
@@ -54,6 +55,7 @@ pub struct Gatekeeper {
     pub last: std::time::Instant,
     pub parser_key: String,
     pub sleep_time: u64,
+    pub logger: Arc<Logger>,
 }
 
 impl Actor for Gatekeeper {
@@ -87,6 +89,7 @@ impl Handler<GatekeeperRequest> for Gatekeeper {
                 response_addr: msg.response_addr.clone(),
                 target: msg.target.clone(),
                 parser_key: self.parser_key.clone(),
+                logger: self.logger.clone(),
             })
             .unwrap();
 
