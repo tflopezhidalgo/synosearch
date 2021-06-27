@@ -47,6 +47,9 @@ impl Parser for ThesaurusProvider {
         };
 
         let vec_class = contents.split("e1ccqdb60\">").collect::<Vec<&str>>();
+        if vec_class.len() == 1 {
+            return Vec::new();
+        }
         let vec_ul = vec_class[1].split("</ul>").collect::<Vec<&str>>();
         let vec_il = vec_ul[0].split("<!-- -->").collect::<Vec<&str>>();
 
@@ -104,6 +107,9 @@ impl Parser for YourDictionaryProvider {
         let vec_class = contents
             .split("<div class=\"single-synonym-wrapper\" ")
             .collect::<Vec<&str>>();
+        if vec_class.len() == 1 {
+            return Vec::new();
+        }
         let vec_ul = vec_class[1]
             .split("</span></button></div></div></div> <!----></div></div> <!----></div></div>")
             .collect::<Vec<&str>>();
@@ -164,6 +170,9 @@ impl Parser for MerriamWebsterProvider {
         let vec_class = contents
             .split("<ul class=\"mw-list\">")
             .collect::<Vec<&str>>();
+        if vec_class.len() == 1 {
+            return Vec::new();
+        }
         let vec_ul = vec_class[1].split("</ul>").collect::<Vec<&str>>();
         let vec_il = vec_ul[0].split("<li>").collect::<Vec<&str>>();
 

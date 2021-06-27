@@ -29,8 +29,8 @@ impl FileReader {
         for w in words.into_iter() {
             vec.push(w.to_string());
         }
-        let empty_string = "";
-        vec.retain(|x| x != empty_string);
+        vec.retain(|x| x != "");
+        vec.retain(|x| x != " ");
         self.logger.write(MESSAGE_RETURN.to_string());
         self.logger.write(format!("INFO: Lista palabras: {:?}\n", vec));
         return vec;
