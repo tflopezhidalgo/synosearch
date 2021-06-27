@@ -28,7 +28,7 @@ static NOTIFY_FRECUENCY: u64 = 1;
 static MIN_TIME_REQUESTS_SECS: u64 = 1;
 static MAX_CONCURRENCY: usize = 5;
 static MAX_PAGES: i32 = 3;
-const LOG_FILENAME: &str = "src/log.txt";
+const LOG_FILENAME: &str = "log.txt";
 
 #[actix_rt::main]
 async fn run_actors(words: Vec<String>, logger: Arc<Logger>) {

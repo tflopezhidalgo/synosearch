@@ -14,15 +14,23 @@ impl Counter {
             *entry += 1;
         }
 
-        /*
-        for c in synonimous_counter {
-            println!("{:?}", c);
-        }
-        */
+        
         logger.write(format!(
-            "INFO: WORD: {}\nSINONIMOUS: \n{:?}\n",
-            word, synonimous_counter
+            "\nWORD: {}\nSINONIMOUS: \n",
+            word
         ));
+
+        for c in &synonimous_counter {
+            let key = c.0;
+            let value = c.1;
+            if *value == 1 {
+                logger.write(format!("{}\n", key));
+            } else {
+                logger.write(format!("{} ({})\n", key, value));
+            }
+        }
+        
+        logger.write(format!("\n\n"));
         println!("WORD: {}\nSINONIMOUS: \n{:?}\n", word, synonimous_counter);
     }
 }
