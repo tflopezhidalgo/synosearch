@@ -112,7 +112,7 @@ impl Handler<SynonymRequest> for PerWordWorker {
 
     fn handle(&mut self, request: SynonymRequest, ctx: &mut Context<Self>) -> Self::Result {
         println!("Asking synonym for {:?}", request.target);
-        let me = Arc::new(ctx.address().recipient());
+        let me = Arc::new(ctx.address());
         self.target = request.target.clone();
 
         for gatekeeper in self.gatekeepers.iter() {
