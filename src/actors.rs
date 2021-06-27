@@ -1,6 +1,9 @@
 use actix::prelude::*;
+#[path = "utils/counter.rs"]
+mod counter;
+use counter::Counter;
 use actix::{Actor, Context, SyncContext};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc};
 use std::vec;
 
 use crate::logger::Logger;
@@ -26,7 +29,7 @@ impl Handler<WorkerSynonymsRequest> for Worker {
         let parsers: Vec<Box<Arc<dyn Parser>>> = vec![
             Box::new(Arc::new(ThesaurusProvider::new(request.logger.clone()))),
             Box::new(Arc::new(YourDictionaryProvider::new(
-                request.logger.clone(),
+              request.logger.clone(),
             ))),
             Box::new(Arc::new(MerriamWebsterProvider::new(
                 request.logger.clone(),
@@ -65,18 +68,19 @@ impl Handler<GatekeeperRequest> for Gatekeeper {
     type Result = ();
 
     fn handle(&mut self, msg: GatekeeperRequest, _ctx: &mut Context<Self>) -> Self::Result {
-        println!("[T] handling {:?}", msg.target.clone());
+        self.logger.write(format!("INFO: [T] handling {:?}", msg.target.clone()));
 
         let elapsed = std::time::Instant::now()
             .duration_since(self.last)
             .as_secs();
         if elapsed < self.sleep_time {
-            println!("[T] Sleeping by {:?} secs.", (self.sleep_time - elapsed));
+            self.logger.write(format!("INFO: [T] Sleeping by {:?} secs.", (self.sleep_time - elapsed)));
             std::thread::sleep(std::time::Duration::from_secs(self.sleep_time - elapsed));
-            println!("[T] Awaking");
+            self.logger.write(format!("INFO: [T] Awaking"));
         }
 
-        println!("[T] Making request for {:?}", msg.target.clone());
+        self.logger.write(format!("INFO: [T] Making request for {:?}", msg.target.clone()));
+        //println!("[T] Making request for {:?}", msg.target.clone());
 
         let worker_request = WorkerSynonymsRequest {
             response_addr: msg.response_addr.clone(),
@@ -101,6 +105,7 @@ pub struct PerWordWorker {
     pub gatekeepers: Arc<Vec<Arc<Addr<Gatekeeper>>>>,
     pub acum: Vec<String>,
     pub lefting: u32,
+    logger: Arc<Logger>,
 }
 
 impl Actor for PerWordWorker {
@@ -122,10 +127,10 @@ impl Handler<SynonymRequest> for PerWordWorker {
             };
 
             match gatekeeper.try_send(gatekeeper_request) {
-                Ok(result) => {
+                Ok(_result) => {
                     println!("Sended to [T]");
                 }
-                Err(e) => {
+                Err(_e) => {
                     panic!("No se pudo enviar el mensaje al gatekeeper");
                 }
             };
@@ -144,7 +149,8 @@ impl Handler<SynonymsResult> for PerWordWorker {
         self.lefting = tmp;
         if tmp == 0 {
             println!("Palabra: {:?} tiene sinónimos:", self.target);
-            println!("{:?}", self.acum.join(", "));
+            Counter::count(self.target.to_string(), self.acum.clone(), self.logger.clone());
+            //println!("{:?}", self.acum.join(", "));
         }
     }
 }
