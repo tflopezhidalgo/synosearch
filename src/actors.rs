@@ -6,6 +6,7 @@ use actix::{Actor, Context, SyncContext};
 use std::sync::{Arc};
 use std::vec;
 
+
 use crate::logger::Logger;
 use crate::messages::*;
 use crate::parsing::{MerriamWebsterProvider, Parser, ThesaurusProvider, YourDictionaryProvider};
@@ -148,7 +149,13 @@ impl Handler<SynonymsResult> for PerWordWorker {
         self.lefting = tmp;
         if tmp == 0 {
             self.logger.write(format!("INFO: Palabra: {:?} tiene sinónimos:", self.target));
-            Counter::count(self.target.to_string(), self.acum.clone(), self.logger.clone());
+            let tmp: String = (*self.target).clone();
+            let tmp2 = self.acum.clone();
+            Counter::count(
+                tmp, 
+                tmp2,
+                self.logger.clone()
+            );
         }
     }
 }

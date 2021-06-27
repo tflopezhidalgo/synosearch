@@ -87,7 +87,7 @@ async fn run_actors(words: Vec<String>, logger: Arc<Logger>) {
         .unwrap();
     }
 
-    println!("stopping system...");
+    logger.write("INFO: stopping system...".to_string());
     System::current().stop();
 }
 
