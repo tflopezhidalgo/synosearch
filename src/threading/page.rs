@@ -1,8 +1,6 @@
 use crate::Logger;
 use std::sync::{Arc, Condvar, Mutex};
-use std::thread::{self};
 use std::time;
-use std::time::Duration;
 use std_semaphore::Semaphore;
 
 pub struct Page {
@@ -44,26 +42,17 @@ impl Page {
 
     /// Sends a request
     fn send_request(&self) -> Vec<String> {
-        self.logger.write(format!(
-            "INFO: WORD {:?} \t PAGE {:?} \t TRYING TO DO A REQUEST\n",
-            self.word, self.id
-        ));
         self.sem.acquire();
-        self.logger.write(format!(
-            "INFO: WORD {:?} \t PAGE {:?} \t DOING REQUEST\n",
-            self.word, self.id
-        ));
         let word_clone = self.word.clone();
 
         let vec = self.providers[self.id].parse(word_clone.to_string());
-        self.logger.write(format!(
+        self.logger.info(format!(
             "INFO: WORD {:?} \t PAGE {:?} \t SYNONYMS: {:?}\n",
             self.word, self.id, vec
         ));
 
-        thread::sleep(Duration::from_millis(10000));
         self.sem.release();
-        self.logger.write(format!(
+        self.logger.info(format!(
             "INFO: WORD {:?} \t PAGE {:?} \t FINISHED REQUEST\n",
             self.word, self.id
         ));

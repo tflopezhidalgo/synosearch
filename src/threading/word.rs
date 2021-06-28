@@ -11,7 +11,6 @@ use std::thread::{self, JoinHandle};
 use std_semaphore::Semaphore;
 
 
-
 /// Handles the thread of each word
 /// Spawns the thread for each page inside the word and controls the concurrency between them
 pub struct Word {
@@ -25,7 +24,6 @@ pub struct Word {
     sem: Arc<Semaphore>,
     providers: Arc<Vec<Box<dyn crate::parsing::Parser + Send + Sync>>>,
     logger: Arc<Logger>,
-    logger_result: Arc<Logger>
 }
 
 impl Word {
@@ -39,7 +37,6 @@ impl Word {
         sem: Arc<Semaphore>,
         providers: Arc<Vec<Box<dyn crate::parsing::Parser + Send + Sync>>>,
         logger: Arc<Logger>,
-        logger_result: Arc<Logger>
     ) -> Word {
         Word {
             word: word,
@@ -48,17 +45,16 @@ impl Word {
             page_threads: vec![],
             providers: providers,
             logger: logger,
-            logger_result: logger_result
         }
     }
 
     /// Creates a thread for sending a request to each page and waits for all of them to finish
     pub fn send_requests_to_pages_concurrently(mut self) {
         self.logger
-            .write("INFO: Spawn words threads Words\n".to_string());
+            .info("Spawn words threads Words".to_string());
         self.spawn_pages_threads();
         self.logger
-            .write("INFO: Join words threads Words\n".to_string());
+            .info("Join words threads Words".to_string());
         self.join_pages_threads();
     }
 
@@ -72,7 +68,7 @@ impl Word {
             let logger_clone = self.logger.clone();
 
             self.logger
-                .write("INFO: Send request to page threads\n".to_string());
+                .info("Send request to page threads".to_string());
             let page = Page::new(
                 word_clone,
                 i as usize,
@@ -89,15 +85,15 @@ impl Word {
     /// Waits for each thread in page_threads to finish
     fn join_pages_threads(self) {
         self.logger
-            .write(format!("INFO: Join threads from word: {}\n", self.word));
-        let mut synonimous = Vec::new();
+            .info(format!("Join threads from word: {}", self.word));
+        let mut synonyms = Vec::new();
         for page_thread in self.page_threads {
-            synonimous.append(&mut page_thread.join().unwrap());
+            synonyms.append(&mut page_thread.join().unwrap());
         }
-        self.logger.write(format!(
-            "INFO: Get all synonimous from word {} and count",
+        self.logger.info(format!(
+            "Get all synonyms from word {} and count",
             self.word
         ));
-        Counter::count(self.word.to_string(), synonimous, self.logger_result.clone());
+        Counter::count(self.word.to_string(), synonyms, self.logger.clone());
     }
 }

@@ -9,9 +9,6 @@ use std::{time, vec};
 use std_semaphore::Semaphore;
 use word::Word;
 
-const RESULT_FILENAME: &str = "result.txt";
-
-
 /// Handles the main thread
 /// Spawns the thread for each word and controls the concurrency between them
 pub struct Controller {
@@ -57,23 +54,21 @@ impl Controller {
     /// Creates a thread for processing each word and waits for all of them to finish
     pub fn process_words_concurrently(mut self) {
         self.logger
-            .info("Spawn words threads Controller\n".to_string());
+            .info("Spawn words threads Controller".to_string());
         self.spawn_word_threads();
         self.logger
-            .info("Join words threads Controller\n".to_string());
+            .info("Join words threads Controller".to_string());
         self.join_word_threads();
     }
 
     /// Creates a thread for processing each word
     fn spawn_word_threads(&mut self) {
-        let logger_result = Arc::from(Logger::new(RESULT_FILENAME));
         for i in 0..self.words.len() {
             let word_clone = Arc::new(self.words[i].clone());
             let condvars_clone = self.condvars.clone();
             let sem_clone = self.sem.clone();
             let providers_clone = self.providers.clone();
             let logger_clone = self.logger.clone();
-            let logger_result_clone = logger_result.clone();
 
             let word = Word::new(
                 word_clone,
@@ -81,11 +76,10 @@ impl Controller {
                 sem_clone,
                 providers_clone,
                 logger_clone,
-                logger_result_clone
             );
 
             self.logger
-                .info("Send request to words threads\n".to_string());
+                .info("Send request to words threads".to_string());
             self.word_threads.push(thread::spawn(move || {
                 word.send_requests_to_pages_concurrently();
             }));
