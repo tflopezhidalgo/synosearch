@@ -28,7 +28,6 @@ const URL_THERASAURUS: &str = "https://www.thesaurus.com/browse/";
 impl Parser for ThesaurusProvider {
     fn parse(&self, target: String) -> Vec<String> {
         let url = format!("{}{}", URL_THERASAURUS, target);
-
         self.logger
             .write(format!("{} Therasaurus, WORD: {}\n", MESSAGE_INIT, url));
         let request = match reqwest::blocking::get(url) {

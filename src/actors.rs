@@ -1,11 +1,12 @@
-use actix::prelude::*;
 #[path = "utils/counter.rs"]
 mod counter;
 use counter::Counter;
+
+use actix::prelude::*;
 use actix::{Actor, Context, SyncContext};
+
 use std::sync::{Arc};
 use std::vec;
-
 
 use crate::logger::Logger;
 use crate::messages::*;
@@ -23,7 +24,7 @@ impl Handler<WorkerSynonymsRequest> for Worker {
     fn handle(
         &mut self,
         request: WorkerSynonymsRequest,
-        _ctx: &mut SyncContext<Self>,
+        _: &mut SyncContext<Self>,
     ) -> Self::Result {
         let tmp = (*request.target).clone();
 
@@ -68,13 +69,14 @@ impl Actor for Gatekeeper {
 impl Handler<GatekeeperRequest> for Gatekeeper {
     type Result = ();
 
-    fn handle(&mut self, msg: GatekeeperRequest, _ctx: &mut Context<Self>) -> Self::Result {
-        self.logger.write(format!("INFO: [T] handling {:?}\n", msg.target.clone()));
+    fn handle(&mut self, msg: GatekeeperRequest, _: &mut Context<Self>) -> Self::Result {
+        self.logger.write(format!("INFO: [T] handling {:?}", msg.target.clone()));
 
         let elapsed = std::time::Instant::now()
             .duration_since(self.last)
             .as_secs();
         if elapsed < self.sleep_time {
+            println!("sleeping by {:?} secs", (self.sleep_time - elapsed));
             self.logger.write(format!("INFO: [T] Sleeping by {:?} secs.\n", (self.sleep_time - elapsed)));
             std::thread::sleep(std::time::Duration::from_secs(self.sleep_time - elapsed));
             self.logger.write(format!("INFO: [T] Awaking\n"));
@@ -103,6 +105,7 @@ impl Handler<GatekeeperRequest> for Gatekeeper {
 pub struct PerWordWorker {
     pub target: Arc<String>,
     pub gatekeepers: Arc<Vec<Arc<Addr<Gatekeeper>>>>,
+    pub counter: Arc<Addr<CounterActor>>,
     pub acum: Vec<String>,
     pub lefting: u32,
     pub logger: Arc<Logger>,
@@ -117,13 +120,13 @@ impl Handler<SynonymRequest> for PerWordWorker {
 
     fn handle(&mut self, request: SynonymRequest, ctx: &mut Context<Self>) -> Self::Result {
         self.logger.write(format!("INFO: Asking synonym for {:?}\n", request.target));
-        let me = Arc::new(ctx.address());
-        self.target = request.target.clone();
+
+        let me = Arc::new(ctx.address().recipient());
 
         for gatekeeper in self.gatekeepers.iter() {
             let gatekeeper_request = GatekeeperRequest {
                 response_addr: me.clone(),
-                target: self.target.clone(),
+                target: request.target.clone(),
             };
 
             match gatekeeper.try_send(gatekeeper_request) {
@@ -156,6 +159,27 @@ impl Handler<SynonymsResult> for PerWordWorker {
                 tmp2,
                 self.logger.clone()
             );
+            self.counter.do_send(Increment);
+        }
+    }
+}
+
+pub struct CounterActor {
+    pub limit: u32,
+    pub count: u32
+}
+
+impl Actor for CounterActor {
+    type Context = Context<Self>;
+}
+
+impl Handler<Increment> for CounterActor {
+    type Result = ();
+
+    fn handle(&mut self, _: Increment, _: &mut Context<Self>) -> Self::Result {
+        self.count += 1;
+        if self.count == self.limit {
+            System::current().stop();
         }
     }
 }
