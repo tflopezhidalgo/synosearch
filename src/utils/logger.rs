@@ -30,6 +30,6 @@ impl Logger {
     }
 
     pub fn info(&self, msg: String) {
-        self.write(format!("[INFO] - {}", msg));
+        return self.write(format!("[INFO] - {}", msg));
     }
 }

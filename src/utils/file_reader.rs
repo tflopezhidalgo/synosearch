@@ -17,12 +17,12 @@ impl FileReader {
         FileReader { filename, logger }
     }
     pub fn get_words(&self) -> Vec<String> {
-        self.logger.write(MESSAGE_INIT.to_string());
+        self.logger.info(MESSAGE_INIT.to_string());
 
         let contents =
             fs::read_to_string(&self.filename).expect("Something went wrong reading the file");
 
-        self.logger.write(MESSAGE_SPLIT.to_string());
+        self.logger.info(MESSAGE_SPLIT.to_string());
         let words = contents.split(SPLIT_CHAR).collect::<Vec<&str>>();
         let mut vec = Vec::new();
 
@@ -31,8 +31,8 @@ impl FileReader {
         }
         vec.retain(|x| x != "");
         vec.retain(|x| x != " ");
-        self.logger.write(MESSAGE_RETURN.to_string());
-        self.logger.write(format!("INFO: Lista palabras: {:?}\n", vec));
+        self.logger.info(MESSAGE_RETURN.to_string());
+        self.logger.info(format!("Lista palabras: {:?}\n", vec));
         return vec;
     }
 }

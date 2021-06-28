@@ -76,8 +76,7 @@ impl Handler<GatekeeperRequest> for Gatekeeper {
             .duration_since(self.last)
             .as_secs();
         if elapsed < self.sleep_time {
-            println!("sleeping by {:?} secs", (self.sleep_time - elapsed));
-            self.logger.write(format!("INFO: [T] Sleeping by {:?} secs.\n", (self.sleep_time - elapsed)));
+            self.logger.info(format!("INFO: [T] Sleeping by {:?} secs.\n", (self.sleep_time - elapsed)));
             std::thread::sleep(std::time::Duration::from_secs(self.sleep_time - elapsed));
             self.logger.write(format!("INFO: [T] Awaking\n"));
         }

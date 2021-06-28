@@ -25,12 +25,37 @@ use logger::Logger;
 mod file_reader;
 use file_reader::FileReader;
 
-static NOTIFY_FRECUENCY: u64 = 1;
-static MIN_TIME_REQUESTS_SECS: u64 = 5;
-static MAX_CONCURRENCY: usize = 15;
-static MAX_PAGES: i32 = 3;
+const NOTIFY_FRECUENCY: u64 = 1;
+const MIN_TIME_REQUESTS_SECS: u64 = 5;
+const MAX_CONCURRENCY: usize = 15;
+const MAX_PAGES: i32 = 3;
 const LOG_FILENAME: &str = "log.txt";
-const RESULT_FILENAME: &str = "result.txt";
+
+
+fn usage() -> i32 {
+    let args: Vec<String> = env::args().collect();
+    println!(
+        "Usage: {} <actors|threads> <input file>", 
+        args[0]
+    );
+    return -1;
+}
+
+fn starting(
+    mode: String, threads: usize, timeout: u64, logfile: String, inputfile: String
+) {
+    println!();
+    println!(
+        "Taking words from {:?}. Logging messages will be saved to: {:?}.",
+        &inputfile,
+        &logfile
+    );
+    println!(
+        "Starting in {} mode, using up to {} threads, and {} secs. as request timeout.",
+        &mode, &threads, &timeout 
+    );
+    println!();
+}
 
 
 fn run_actors(words: Vec<String>, logger: Arc<Logger>) {
@@ -102,24 +127,6 @@ fn run_actors(words: Vec<String>, logger: Arc<Logger>) {
     return system.run().unwrap();
 }
 
-fn choose_mode(mode: String, filename: String) {
-    let logger = Arc::from(Logger::new(LOG_FILENAME));
-
-    let words = FileReader::new(filename, logger.clone()).get_words();
-
-    // TODO. usar pattern matching
-    if mode.eq("actors") {
-        println!("Run mode actors");
-        return run_actors(words, logger.clone());
-    } else if mode.eq("threads") {
-        println!("Run mode threads");
-        logger.write("INFO: Run program mod threads\n".to_string());
-        run_threads(words, logger.clone());
-    } else {
-        println!("Unknown mode\n");
-    }
-}
-
 fn run_threads(words: Vec<String>, logger: Arc<Logger>) {
     let p1 = ThesaurusProvider::new(logger.clone());
     let p2 = YourDictionaryProvider::new(logger.clone());
@@ -139,10 +146,35 @@ fn run_threads(words: Vec<String>, logger: Arc<Logger>) {
     controller.process_words_concurrently();
 }
 
+fn chose_mode(mode: String, filename: String) -> i32 {
+    let logger = Arc::from(Logger::new(LOG_FILENAME));
+
+    let words = FileReader::new(filename.clone(), logger.clone()).get_words();
+
+    match mode.as_str() {
+        "actors" => {
+            starting(mode, MAX_CONCURRENCY, MIN_TIME_REQUESTS_SECS, LOG_FILENAME.to_string(), filename);
+            run_actors(words, logger.clone());
+            return 0;
+        },
+        "threads" => {
+            starting(mode, MAX_CONCURRENCY, MIN_TIME_REQUESTS_SECS, LOG_FILENAME.to_string(), filename);
+            run_threads(words, logger.clone());
+            return 0;
+        },
+        _ => {
+            println!("Invalid mode: {}", mode);
+            return 0;
+        }
+    }
+}
+
 fn main() {
     let args: Vec<String> = env::args().collect();
     if args.len() != 3 {
-        process::exit(-1);
+        process::exit(usage());
     }
-    choose_mode(args[1].clone(), args[2].clone())
+    process::exit(
+        chose_mode(args[1].clone(), args[2].clone())
+    );
 }

@@ -57,12 +57,11 @@ impl Controller {
     /// Creates a thread for processing each word and waits for all of them to finish
     pub fn process_words_concurrently(mut self) {
         self.logger
-            .write("INFO: Spawn words threads Controller\n".to_string());
+            .info("Spawn words threads Controller\n".to_string());
         self.spawn_word_threads();
         self.logger
-            .write("INFO: Join words threads Controller\n".to_string());
+            .info("Join words threads Controller\n".to_string());
         self.join_word_threads();
-        println!("Save result in file {}\n", RESULT_FILENAME);
     }
 
     /// Creates a thread for processing each word
@@ -86,7 +85,7 @@ impl Controller {
             );
 
             self.logger
-                .write("INFO: Send request to words threads\n".to_string());
+                .info("Send request to words threads\n".to_string());
             self.word_threads.push(thread::spawn(move || {
                 word.send_requests_to_pages_concurrently();
             }));
