@@ -18,6 +18,7 @@ impl Logger {
     }
 
     pub fn write(&self, message: String) {
+        let message = message + "\n";
         let mut file = match self.file.lock() {
             Ok(m) => m,
             Err(error) => panic!("Problem lock file: {:?}", error),
@@ -26,5 +27,9 @@ impl Logger {
             Ok(m) => m,
             Err(error) => panic!("Problem writting the file: {:?}", error),
         };
+    }
+
+    pub fn info(&self, msg: String) {
+        self.write(format!("[INFO] - {}", msg));
     }
 }
