@@ -30,6 +30,7 @@ static MIN_TIME_REQUESTS_SECS: u64 = 5;
 static MAX_CONCURRENCY: usize = 15;
 static MAX_PAGES: i32 = 3;
 const LOG_FILENAME: &str = "log.txt";
+const RESULT_FILENAME: &str = "result.txt";
 
 
 fn run_actors(words: Vec<String>, logger: Arc<Logger>) {

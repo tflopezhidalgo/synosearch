@@ -10,6 +10,8 @@ use std::sync::{Arc, Condvar, Mutex};
 use std::thread::{self, JoinHandle};
 use std_semaphore::Semaphore;
 
+
+
 /// Handles the thread of each word
 /// Spawns the thread for each page inside the word and controls the concurrency between them
 pub struct Word {
@@ -23,6 +25,7 @@ pub struct Word {
     sem: Arc<Semaphore>,
     providers: Arc<Vec<Box<dyn crate::parsing::Parser + Send + Sync>>>,
     logger: Arc<Logger>,
+    logger_result: Arc<Logger>
 }
 
 impl Word {
@@ -36,6 +39,7 @@ impl Word {
         sem: Arc<Semaphore>,
         providers: Arc<Vec<Box<dyn crate::parsing::Parser + Send + Sync>>>,
         logger: Arc<Logger>,
+        logger_result: Arc<Logger>
     ) -> Word {
         Word {
             word: word,
@@ -44,6 +48,7 @@ impl Word {
             page_threads: vec![],
             providers: providers,
             logger: logger,
+            logger_result: logger_result
         }
     }
 
@@ -93,6 +98,6 @@ impl Word {
             "INFO: Get all synonimous from word {} and count",
             self.word
         ));
-        Counter::count(self.word.to_string(), synonimous, self.logger.clone());
+        Counter::count(self.word.to_string(), synonimous, self.logger_result.clone());
     }
 }
