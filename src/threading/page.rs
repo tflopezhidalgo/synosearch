@@ -47,13 +47,13 @@ impl Page {
 
         let vec = self.providers[self.id].parse(word_clone.to_string());
         self.logger.info(format!(
-            "INFO: WORD {:?} \t PAGE {:?} \t SYNONYMS: {:?}\n",
+            "INFO: WORD {:?} \t PAGE {:?} \t SYNONYMS: {:?}",
             self.word, self.id, vec
         ));
 
         self.sem.release();
         self.logger.info(format!(
-            "INFO: WORD {:?} \t PAGE {:?} \t FINISHED REQUEST\n",
+            "INFO: WORD {:?} \t PAGE {:?} \t FINISHED REQUEST",
             self.word, self.id
         ));
         return vec;

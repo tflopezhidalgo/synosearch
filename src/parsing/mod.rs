@@ -29,7 +29,7 @@ impl Parser for ThesaurusProvider {
     fn parse(&self, target: String) -> Vec<String> {
         let url = format!("{}{}", URL_THERASAURUS, target);
         self.logger
-            .info(format!("{} Therasaurus, WORD: {}\n", MESSAGE_INIT, url));
+            .info(format!("{} Therasaurus, WORD: {}", MESSAGE_INIT, url));
         let request = match reqwest::blocking::get(url) {
             Ok(request) => request,
             Err(error) => panic!("Error request from Therasaurus: {:?}", error),
@@ -61,7 +61,7 @@ impl Parser for ThesaurusProvider {
             }
         }
         self.logger.info(format!(
-            "{} Therasaurus, WORD: {}\n",
+            "{} Therasaurus, WORD: {}",
             MESSAGE_RETURN_SYNONIMOUS, target
         ));
         return vec;
@@ -87,7 +87,7 @@ impl Parser for YourDictionaryProvider {
         let url = format!("{}{}", URL_YOURDICTIONARY, target);
 
         self.logger
-            .info(format!("{} YourDictionary, WORD: {}\n", MESSAGE_INIT, url));
+            .info(format!("{} YourDictionary, WORD: {}", MESSAGE_INIT, url));
         let client = reqwest::blocking::Client::new();
         let res = match client.get(url).header(USER_AGENT, APP_USER_AGENT).send() {
             Ok(request) => request,
@@ -125,7 +125,7 @@ impl Parser for YourDictionaryProvider {
             }
         }
         self.logger.info(format!(
-            "{} YourDictionary, WORD: {}\n",
+            "{} YourDictionary, WORD: {}",
             MESSAGE_RETURN_SYNONIMOUS, target
         ));
         return vec;

@@ -149,7 +149,15 @@ fn run_threads(words: Vec<String>, logger: Arc<Logger>) {
 fn chose_mode(mode: String, filename: String) -> i32 {
     let logger = Arc::from(Logger::new(LOG_FILENAME));
 
-    let words = FileReader::new(filename.clone(), logger.clone()).get_words();
+    let f_reader = FileReader::new(filename.clone(), logger.clone());
+
+    let words = match f_reader.get_words() {
+        Ok(words ) => words,
+        Err(e) => {
+            println!("Unable to open file {:?}: {}", filename, e);
+            return -1;
+        }
+    };
 
     match mode.as_str() {
         "actors" => {
