@@ -10,7 +10,6 @@ use std::sync::{Arc, Condvar, Mutex};
 use std::thread::{self, JoinHandle};
 use std_semaphore::Semaphore;
 
-
 /// Handles the thread of each word
 /// Spawns the thread for each page inside the word and controls the concurrency between them
 pub struct Word {
@@ -50,11 +49,9 @@ impl Word {
 
     /// Creates a thread for sending a request to each page and waits for all of them to finish
     pub fn send_requests_to_pages_concurrently(mut self) {
-        self.logger
-            .info("Spawn words threads Words".to_string());
+        self.logger.info("Spawn words threads Words".to_string());
         self.spawn_pages_threads();
-        self.logger
-            .info("Join words threads Words".to_string());
+        self.logger.info("Join words threads Words".to_string());
         self.join_pages_threads();
     }
 
@@ -67,8 +64,7 @@ impl Word {
             let providers_clone = self.providers.clone();
             let logger_clone = self.logger.clone();
 
-            self.logger
-                .info("Send request to page threads".to_string());
+            self.logger.info("Send request to page threads".to_string());
             let page = Page::new(
                 word_clone,
                 i as usize,

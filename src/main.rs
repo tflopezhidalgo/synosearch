@@ -31,37 +31,31 @@ const MAX_CONCURRENCY: usize = 15;
 const MAX_PAGES: i32 = 3;
 const LOG_FILENAME: &str = "log.txt";
 
-
 fn usage() -> i32 {
     let args: Vec<String> = env::args().collect();
-    println!(
-        "Usage: {} <actors|threads> <input file>", 
-        args[0]
-    );
+    println!("Usage: {} <actors|threads> <input file>", args[0]);
     return -1;
 }
 
-fn starting(
-    mode: String, threads: usize, timeout: u64, logfile: String, inputfile: String
-) {
+fn starting(mode: String, threads: usize, timeout: u64, logfile: String, inputfile: String) {
     println!();
     println!(
         "Taking words from {:?}. Logging messages will be saved to: {:?}.",
-        &inputfile,
-        &logfile
+        &inputfile, &logfile
     );
     println!(
         "Starting in {} mode, using up to {} threads, and {} secs. as request timeout.",
-        &mode, &threads, &timeout 
+        &mode, &threads, &timeout
     );
     println!();
 }
-
 
 fn run_actors(words: Vec<String>, logger: Arc<Logger>) {
     let system = System::new();
     let mut words_arc = vec![];
-    for w in words { words_arc.push(Arc::new(w)); }
+    for w in words {
+        words_arc.push(Arc::new(w));
+    }
 
     let worker = Arc::new(SyncArbiter::start(MAX_CONCURRENCY, || Worker));
 
@@ -103,10 +97,11 @@ fn run_actors(words: Vec<String>, logger: Arc<Logger>) {
 
         let c_actor = Arc::new(
             CounterActor {
-                limit: words_arc.len() as u32, 
-                count: 0 
+                limit: words_arc.len() as u32,
+                count: 0,
             }
-            .start());
+            .start(),
+        );
 
         for w in words_arc {
             PerWordWorker {
@@ -115,7 +110,7 @@ fn run_actors(words: Vec<String>, logger: Arc<Logger>) {
                 lefting: gatekeepers.len() as u32,
                 acum: vec![],
                 logger: logger.clone(),
-                counter: c_actor.clone()
+                counter: c_actor.clone(),
             }
             .start()
             .send(SynonymRequest { target: w.clone() })
@@ -147,12 +142,18 @@ fn run_threads(words: Vec<String>, logger: Arc<Logger>) {
 }
 
 fn chose_mode(mode: String, filename: String) -> i32 {
-    let logger = Arc::from(Logger::new(LOG_FILENAME));
+    let logger = match Logger::new(LOG_FILENAME) {
+        Ok(logger) => Arc::new(logger),
+        Err(e) => {
+            println!("Unable to open logger file {:?}: {}", LOG_FILENAME, e);
+            return -1;
+        }
+    };
 
     let f_reader = FileReader::new(filename.clone(), logger.clone());
 
     let words = match f_reader.get_words() {
-        Ok(words ) => words,
+        Ok(words) => words,
         Err(e) => {
             println!("Unable to open file {:?}: {}", filename, e);
             return -1;
@@ -161,15 +162,27 @@ fn chose_mode(mode: String, filename: String) -> i32 {
 
     match mode.as_str() {
         "actors" => {
-            starting(mode, MAX_CONCURRENCY, MIN_TIME_REQUESTS_SECS, LOG_FILENAME.to_string(), filename);
+            starting(
+                mode,
+                MAX_CONCURRENCY,
+                MIN_TIME_REQUESTS_SECS,
+                LOG_FILENAME.to_string(),
+                filename,
+            );
             run_actors(words, logger.clone());
             return 0;
-        },
+        }
         "threads" => {
-            starting(mode, MAX_CONCURRENCY, MIN_TIME_REQUESTS_SECS, LOG_FILENAME.to_string(), filename);
+            starting(
+                mode,
+                MAX_CONCURRENCY,
+                MIN_TIME_REQUESTS_SECS,
+                LOG_FILENAME.to_string(),
+                filename,
+            );
             run_threads(words, logger.clone());
             return 0;
-        },
+        }
         _ => {
             println!("Invalid mode: {}", mode);
             return 0;
@@ -182,7 +195,5 @@ fn main() {
     if args.len() != 3 {
         process::exit(usage());
     }
-    process::exit(
-        chose_mode(args[1].clone(), args[2].clone())
-    );
+    process::exit(chose_mode(args[1].clone(), args[2].clone()));
 }

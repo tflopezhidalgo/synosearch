@@ -1,43 +1,45 @@
 use std::fs::File;
-use std::io::Write;
-use std::sync::{Arc, Mutex};
+use std::io::{Error, Write};
+use std::sync::Mutex;
 use std::thread::current;
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct Logger {
-    file: Arc<Mutex<std::fs::File>>,
+    file: Mutex<std::fs::File>,
 }
 
 impl Logger {
-    pub fn new(filename: &str) -> Self {
-        let f = match File::create(filename) {
-            Ok(file) => file,
-            Err(error) => panic!("Problem creating the file: {:?}", error),
-        };
-        let file = Arc::new(Mutex::new(f));
-        return Logger { file };
+    pub fn new(filename: &str) -> Result<Self, Error> {
+        let log_f = File::create(filename)?;
+        Ok(Logger {
+            file: Mutex::new(log_f),
+        })
     }
-
-    pub fn write(&self, message: String) {
+    fn write(&self, message: String) -> Result<(), Error> {
         let message = message + "\n";
-        let mut file = match self.file.lock() {
-            Ok(m) => m,
-            Err(error) => panic!("Problem lock file: {:?}", error),
+        match self.file.lock() {
+            Ok(mut file) => {
+                (*file).write_all(message.as_bytes())?;
+            }
+            Err(e) => {
+                // Si el lock está envenenado hacemos panic!()
+                panic!("{}", e)
+            }
         };
-        match file.write_all(message.as_bytes()) {
-            Ok(m) => m,
-            Err(error) => panic!("Problem writting the file: {:?}", error),
-        };
+        Ok(())
     }
 
     pub fn info(&self, msg: String) {
         let me = current();
-        return self.write(
-            format!(
-                "[INFO][{}] - {}", 
-                me.name().get_or_insert("??"),
-                msg
-            )
-        );
+        match self.write(format!(
+            "[INFO][{}] - {}",
+            me.name().get_or_insert("??"),
+            msg
+        )) {
+            Ok(_) => {}
+            Err(_) => {
+                println!("Unable to write to logging file. Logging messages won't be saved.");
+            }
+        }
     }
 }

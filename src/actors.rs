@@ -5,7 +5,7 @@ use counter::Counter;
 use actix::prelude::*;
 use actix::{Actor, Context, SyncContext};
 
-use std::sync::{Arc};
+use std::sync::Arc;
 use std::vec;
 
 use crate::logger::Logger;
@@ -31,7 +31,7 @@ impl Handler<WorkerSynonymsRequest> for Worker {
         let parsers: Vec<Box<Arc<dyn Parser>>> = vec![
             Box::new(Arc::new(ThesaurusProvider::new(request.logger.clone()))),
             Box::new(Arc::new(YourDictionaryProvider::new(
-              request.logger.clone(),
+                request.logger.clone(),
             ))),
             Box::new(Arc::new(MerriamWebsterProvider::new(
                 request.logger.clone(),
@@ -121,7 +121,7 @@ impl Handler<SynonymRequest> for PerWordWorker {
             };
 
             match gatekeeper.try_send(gatekeeper_request) {
-                Ok(_result) => { }
+                Ok(_result) => {}
                 Err(_e) => {
                     panic!("No se pudo enviar el mensaje al gatekeeper");
                 }
@@ -141,11 +141,7 @@ impl Handler<SynonymsResult> for PerWordWorker {
         if tmp == 0 {
             let tmp: String = (*self.target).clone();
             let tmp2 = self.acum.clone();
-            Counter::count(
-                tmp, 
-                tmp2,
-                self.logger.clone()
-            );
+            Counter::count(tmp, tmp2, self.logger.clone());
             self.counter.do_send(Increment);
         }
     }
@@ -153,7 +149,7 @@ impl Handler<SynonymsResult> for PerWordWorker {
 
 pub struct CounterActor {
     pub limit: u32,
-    pub count: u32
+    pub count: u32,
 }
 
 impl Actor for CounterActor {

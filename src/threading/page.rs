@@ -66,8 +66,7 @@ impl Page {
 
     /// Handles the request when at most one request per page can occur at a time
     fn blocking_request(self) -> Vec<String> {
-        self.logger
-            .info("Get lock blocking request".to_string());
+        self.logger.info("Get lock blocking request".to_string());
         let (lock, cvar) = &*self.condvar;
         let mut last = lock.lock().unwrap();
 

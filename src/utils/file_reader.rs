@@ -1,14 +1,14 @@
 use crate::Arc;
 use crate::Logger;
-use std::io;
 use std::fs;
+use std::io;
 
 const SPLIT_CHAR: &str = "\n";
 const MESSAGE_INIT: &str = "Read file with words";
 const MESSAGE_SPLIT: &str = "Split file into vector";
 const MESSAGE_RETURN: &str = "Return vectors of words";
 
-/// FileReader struct 
+/// FileReader struct
 pub struct FileReader {
     filename: String,
     logger: Arc<Logger>,
@@ -19,7 +19,7 @@ impl FileReader {
         FileReader { filename, logger }
     }
 
-    /// Returns a result that can be a vector of words from 
+    /// Returns a result that can be a vector of words from
     /// `self.filename` splitting by newline separator or a
     /// io::Error.
     pub fn get_words(&self) -> Result<Vec<String>, io::Error> {
