@@ -1,6 +1,7 @@
 use std::fs::File;
 use std::io::Write;
 use std::sync::{Arc, Mutex};
+use std::thread::current;
 
 #[derive(Clone, Debug)]
 pub struct Logger {
@@ -30,6 +31,13 @@ impl Logger {
     }
 
     pub fn info(&self, msg: String) {
-        return self.write(format!("[INFO] - {}", msg));
+        let me = current();
+        return self.write(
+            format!(
+                "[INFO][{}] - {}", 
+                me.name().get_or_insert("??"),
+                msg
+            )
+        );
     }
 }
