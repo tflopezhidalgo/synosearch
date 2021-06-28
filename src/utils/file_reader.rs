@@ -3,9 +3,9 @@ use crate::Logger;
 use std::fs;
 
 const SPLIT_CHAR: &str = "\n";
-const MESSAGE_INIT: &str = "INFO: Read file with words\n";
-const MESSAGE_SPLIT: &str = "INFO: Split file into vector\n";
-const MESSAGE_RETURN: &str = "INFO: Return vectors of words\n";
+const MESSAGE_INIT: &str = "Read file with words";
+const MESSAGE_SPLIT: &str = "Split file into vector";
+const MESSAGE_RETURN: &str = "Return vectors of words";
 
 pub struct FileReader {
     filename: String,
@@ -32,7 +32,7 @@ impl FileReader {
         vec.retain(|x| x != "");
         vec.retain(|x| x != " ");
         self.logger.info(MESSAGE_RETURN.to_string());
-        self.logger.info(format!("Lista palabras: {:?}\n", vec));
+        self.logger.info(format!("Lista palabras: {:?}", vec));
         return vec;
     }
 }

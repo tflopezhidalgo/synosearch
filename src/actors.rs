@@ -70,18 +70,12 @@ impl Handler<GatekeeperRequest> for Gatekeeper {
     type Result = ();
 
     fn handle(&mut self, msg: GatekeeperRequest, _: &mut Context<Self>) -> Self::Result {
-        self.logger.write(format!("INFO: [T] handling {:?}", msg.target.clone()));
-
         let elapsed = std::time::Instant::now()
             .duration_since(self.last)
             .as_secs();
         if elapsed < self.sleep_time {
-            self.logger.info(format!("INFO: [T] Sleeping by {:?} secs.\n", (self.sleep_time - elapsed)));
             std::thread::sleep(std::time::Duration::from_secs(self.sleep_time - elapsed));
-            self.logger.write(format!("INFO: [T] Awaking\n"));
         }
-
-        self.logger.write(format!("INFO: [T] Making request for {:?}\n", msg.target.clone()));
 
         let worker_request = WorkerSynonymsRequest {
             response_addr: msg.response_addr.clone(),
@@ -118,8 +112,6 @@ impl Handler<SynonymRequest> for PerWordWorker {
     type Result = ();
 
     fn handle(&mut self, request: SynonymRequest, ctx: &mut Context<Self>) -> Self::Result {
-        self.logger.write(format!("INFO: Asking synonym for {:?}\n", request.target));
-
         let me = Arc::new(ctx.address().recipient());
 
         for gatekeeper in self.gatekeepers.iter() {
@@ -129,9 +121,7 @@ impl Handler<SynonymRequest> for PerWordWorker {
             };
 
             match gatekeeper.try_send(gatekeeper_request) {
-                Ok(_result) => {
-                    self.logger.write(format!("INFO: Sended to [T]\n"));
-                }
+                Ok(_result) => { }
                 Err(_e) => {
                     panic!("No se pudo enviar el mensaje al gatekeeper");
                 }
@@ -144,13 +134,11 @@ impl Handler<SynonymsResult> for PerWordWorker {
     type Result = ();
 
     fn handle(&mut self, result: SynonymsResult, _: &mut Context<Self>) -> Self::Result {
-        self.logger.write(format!("INFO: *** sinonimos para {:?} recibidos\n", self.target));
         let mut tmp = self.lefting;
         tmp -= 1;
         self.acum.extend_from_slice(&result.synonyms.clone());
         self.lefting = tmp;
         if tmp == 0 {
-            self.logger.write(format!("INFO: Palabra: {:?} tiene sinónimos:\n", self.target));
             let tmp: String = (*self.target).clone();
             let tmp2 = self.acum.clone();
             Counter::count(
