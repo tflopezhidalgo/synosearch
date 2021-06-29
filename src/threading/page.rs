@@ -2,8 +2,6 @@ use crate::Logger;
 use std::sync::{Arc, Condvar, Mutex};
 use std::time;
 use std_semaphore::Semaphore;
-use std::time::Duration;
-use std::thread;
 
 pub struct Page {
     /// The word whose synonyms are to find
