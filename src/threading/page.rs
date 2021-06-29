@@ -2,6 +2,8 @@ use crate::Logger;
 use std::sync::{Arc, Condvar, Mutex};
 use std::time;
 use std_semaphore::Semaphore;
+use std::time::Duration;
+use std::thread;
 
 pub struct Page {
     /// The word whose synonyms are to find
@@ -40,9 +42,10 @@ impl Page {
         }
     }
 
-    /// Sends a request
     fn send_request(&self) -> Vec<String> {
+        println!("WORD {:?} \t PAGE {:?} \t TRYING TO DO A REQUEST", self.word, self.id);
         self.sem.acquire();
+        println!("WORD {:?} \t PAGE {:?} \t DOING REQUEST ---------------", self.word, self.id);
         let word_clone = self.word.clone();
 
         let vec = self.providers[self.id].parse(word_clone.to_string());
@@ -51,7 +54,10 @@ impl Page {
             self.word, self.id, vec
         ));
 
+        // For debugging the concurrency
+        thread::sleep(Duration::from_millis(10000));
         self.sem.release();
+        println!("WORD {:?} \t PAGE {:?} \t FINISHED REQUEST", self.word, self.id);
         self.logger.info(format!(
             "INFO: WORD {:?} \t PAGE {:?} \t FINISHED REQUEST",
             self.word, self.id

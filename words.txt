@@ -1,4 +1,9 @@
 paper
 car
+glass
+fork
+key
+cookie
+shoe
 
 
