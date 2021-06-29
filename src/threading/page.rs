@@ -43,6 +43,7 @@ impl Page {
     }
 
     fn send_request(&self) -> Vec<String> {
+        // Uncomment for debugging the concurrency
         // println!("WORD {:?} \t PAGE {:?} \t TRYING TO DO A REQUEST", self.word, self.id);
         self.sem.acquire();
         // println!("WORD {:?} \t PAGE {:?} \t DOING REQUEST ---------------", self.word, self.id);
@@ -54,7 +55,6 @@ impl Page {
             self.word, self.id, vec
         ));
 
-        // Descomment for debugging the concurrency
         // thread::sleep(Duration::from_millis(10000));
         self.sem.release();
         // println!("WORD {:?} \t PAGE {:?} \t FINISHED REQUEST", self.word, self.id);
