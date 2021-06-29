@@ -3,3 +3,8 @@ house
 dog
 teacher
 car
+glass
+fork
+key
+cookie
+shoe
