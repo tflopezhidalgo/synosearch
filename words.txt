@@ -1,4 +1,5 @@
 paper
+house
+dog
+teacher
 car
-
-

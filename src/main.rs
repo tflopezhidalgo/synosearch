@@ -60,21 +60,19 @@ fn run_actors(words: Vec<String>, logger: Arc<Logger>) {
     let worker = Arc::new(SyncArbiter::start(MAX_CONCURRENCY, || Worker));
 
     system.block_on(async {
-        let mut gatekeepers = vec!();
+        let mut gatekeepers = vec![];
         for i in 0..(MAX_PAGES + 1) {
-            gatekeepers.push(
-                Arc::new(
+            gatekeepers.push(Arc::new(
                 Gatekeeper {
-                        worker: worker.clone(),
-                        last: std::time::Instant::now() - std::time::Duration::from_secs(10000),
-                        parser_i: i as u32,
-                        sleep_time: MIN_TIME_REQUESTS_SECS,
-                        logger: logger.clone(),
-                    }
-                    .start()
-                )
-            )
-        };
+                    worker: worker.clone(),
+                    last: std::time::Instant::now() - std::time::Duration::from_secs(10000),
+                    parser_i: i as u32,
+                    sleep_time: MIN_TIME_REQUESTS_SECS,
+                    logger: logger.clone(),
+                }
+                .start(),
+            ))
+        }
 
         let gatekeepers = Arc::new(gatekeepers);
 
@@ -86,25 +84,39 @@ fn run_actors(words: Vec<String>, logger: Arc<Logger>) {
             .start(),
         );
 
+        let mut word_workers = vec![];
+
         for w in words_arc {
-            PerWordWorker {
-                target: w.clone(),
-                gatekeepers: gatekeepers.clone(),
-                lefting: gatekeepers.len() as u32,
-                acum: vec![],
-                logger: logger.clone(),
-                counter: c_actor.clone(),
-            }
-            .start()
-            .send(SynonymRequest { target: w.clone() })
-            .await
-            .unwrap();
+            word_workers.push(
+                PerWordWorker {
+                    target: w.clone(),
+                    gatekeepers: gatekeepers.clone(),
+                    lefting: gatekeepers.len() as u32,
+                    acum: vec![],
+                    logger: logger.clone(),
+                    counter: c_actor.clone(),
+                }
+                .start()
+                .send(SynonymRequest { target: w.clone() })
+                .await,
+            );
         }
+
+        let _ = word_workers
+            .iter()
+            .map(|future| match future {
+                Ok(()) => (),
+                Err(e) => {
+                    println!("Unable to send word to actor: {}", e)
+                }
+            })
+            .collect::<()>();
+        ()
     });
 
     match system.run() {
-        Ok(_) => {},
-        Err(e) => panic!("Unable to run actors' system: {}", e)
+        Ok(_) => {}
+        Err(e) => panic!("Unable to run actors' system: {}", e),
     };
 }
 
