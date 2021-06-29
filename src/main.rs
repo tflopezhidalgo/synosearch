@@ -60,38 +60,21 @@ fn run_actors(words: Vec<String>, logger: Arc<Logger>) {
     let worker = Arc::new(SyncArbiter::start(MAX_CONCURRENCY, || Worker));
 
     system.block_on(async {
-        let gatekeepers = vec![
-            Arc::new(
+        let mut gatekeepers = vec!();
+        for i in 0..(MAX_PAGES + 1) {
+            gatekeepers.push(
+                Arc::new(
                 Gatekeeper {
-                    worker: worker.clone(),
-                    last: std::time::Instant::now() - std::time::Duration::from_secs(10000),
-                    parser_key: "1".to_string(),
-                    sleep_time: MIN_TIME_REQUESTS_SECS,
-                    logger: logger.clone(),
-                }
-                .start(),
-            ),
-            Arc::new(
-                Gatekeeper {
-                    worker: worker.clone(),
-                    last: std::time::Instant::now() - std::time::Duration::from_secs(10000),
-                    parser_key: "2".to_string(),
-                    sleep_time: MIN_TIME_REQUESTS_SECS,
-                    logger: logger.clone(),
-                }
-                .start(),
-            ),
-            Arc::new(
-                Gatekeeper {
-                    worker: worker.clone(),
-                    last: std::time::Instant::now() - std::time::Duration::from_secs(10000),
-                    parser_key: "3".to_string(),
-                    sleep_time: MIN_TIME_REQUESTS_SECS,
-                    logger: logger.clone(),
-                }
-                .start(),
-            ),
-        ];
+                        worker: worker.clone(),
+                        last: std::time::Instant::now() - std::time::Duration::from_secs(10000),
+                        parser_i: i as u32,
+                        sleep_time: MIN_TIME_REQUESTS_SECS,
+                        logger: logger.clone(),
+                    }
+                    .start()
+                )
+            )
+        };
 
         let gatekeepers = Arc::new(gatekeepers);
 
@@ -119,7 +102,10 @@ fn run_actors(words: Vec<String>, logger: Arc<Logger>) {
         }
     });
 
-    return system.run().unwrap();
+    match system.run() {
+        Ok(_) => {},
+        Err(e) => panic!("Unable to run actors' system: {}", e)
+    };
 }
 
 fn run_threads(words: Vec<String>, logger: Arc<Logger>) {

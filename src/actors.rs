@@ -38,10 +38,10 @@ impl Handler<WorkerSynonymsRequest> for Worker {
             ))),
         ];
 
-        let syn = match request.parser_key.as_str() {
-            "1" => parsers[0].clone().parse(tmp.clone()),
-            "2" => parsers[1].clone().parse(tmp.clone()),
-            "3" => parsers[2].clone().parse(tmp.clone()),
+        let syn = match request.parser_i {
+            0 => parsers[0].clone().parse(tmp.clone()),
+            1 => parsers[1].clone().parse(tmp.clone()),
+            2 => parsers[2].clone().parse(tmp.clone()),
             _ => vec![],
         };
 
@@ -57,7 +57,7 @@ impl Handler<WorkerSynonymsRequest> for Worker {
 pub struct Gatekeeper {
     pub worker: Arc<Addr<Worker>>,
     pub last: std::time::Instant,
-    pub parser_key: String,
+    pub parser_i: u32,
     pub sleep_time: u64,
     pub logger: Arc<Logger>,
 }
@@ -78,9 +78,9 @@ impl Handler<GatekeeperRequest> for Gatekeeper {
         }
 
         let worker_request = WorkerSynonymsRequest {
-            response_addr: msg.response_addr.clone(),
-            target: msg.target.clone(),
-            parser_key: self.parser_key.clone(),
+            response_addr: msg.response_addr,
+            target: msg.target,
+            parser_i: self.parser_i,
             logger: self.logger.clone(),
         };
 

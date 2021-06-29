@@ -26,7 +26,7 @@ pub struct GatekeeperRequest {
 pub struct WorkerSynonymsRequest {
     pub target: Arc<String>,
     pub response_addr: Arc<Recipient<SynonymsResult>>,
-    pub parser_key: String,
+    pub parser_i: u32,
     pub logger: Arc<Logger>,
 }
 
