@@ -5,6 +5,9 @@ use std::time;
 use std_semaphore::Semaphore;
 use std::thread;
 
+const NOTIFY_FRECUENCY: u64 = 1;
+const MIN_TIME_REQUESTS_SECS: u64 = 0;
+
 pub struct Page {
     /// The word whose synonyms are to find
     word: Arc<String>,
@@ -79,7 +82,7 @@ impl Page {
         loop {
             /* https://doc.rust-lang.org/nightly/std/sync/struct.Condvar.html#method.wait_timeout */
             // A notify is sent every NOTIFY_FREQUENCY seconds
-            let timeout = time::Duration::from_millis(crate::NOTIFY_FRECUENCY);
+            let timeout = time::Duration::from_millis(NOTIFY_FRECUENCY);
             let result = cvar.wait_timeout(last, timeout).unwrap();
 
             // At this point a notify() has been made or a timeout has occured
@@ -87,7 +90,7 @@ impl Page {
             last = result.0;
 
             // Condition to go out of the loop
-            if now.duration_since(*last).as_secs() >= crate::MIN_TIME_REQUESTS_SECS {
+            if now.duration_since(*last).as_secs() >= MIN_TIME_REQUESTS_SECS {
                 break;
             }
         }
@@ -100,7 +103,7 @@ impl Page {
 
     /// Handles the request to a page
     pub fn request(self) -> Vec<String> {
-        if crate::MIN_TIME_REQUESTS_SECS == 0 {
+        if MIN_TIME_REQUESTS_SECS == 0 {
             return self.concurrent_request();
         } else {
             return self.blocking_request();

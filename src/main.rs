@@ -25,9 +25,7 @@ use logger::Logger;
 mod file_reader;
 use file_reader::FileReader;
 
-const NOTIFY_FRECUENCY: u64 = 1;
-const MIN_TIME_REQUESTS_SECS: u64 = 0;
-const MAX_CONCURRENCY: usize = 10;
+
 const MAX_PAGES: i32 = 3;
 const LOG_FILENAME: &str = "log.txt";
 

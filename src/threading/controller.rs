@@ -32,7 +32,7 @@ impl Controller {
         providers: Arc<Vec<Box<dyn crate::parsing::Parser + Send + Sync>>>,
         logger: Arc<Logger>,
         max_concurrency: usize,
-        min_time_request_sec: u64
+        _min_time_request_sec: u64
     ) -> Controller {
         let max_pages = providers.len();
         Controller {
