@@ -22,6 +22,7 @@ pub struct Controller {
     sem: Arc<Semaphore>,
     providers: Arc<Vec<Box<dyn crate::parsing::Parser + Send + Sync>>>,
     logger: Arc<Logger>,
+    min_time_request_sec: u64
 }
 
 impl Controller {
@@ -32,7 +33,7 @@ impl Controller {
         providers: Arc<Vec<Box<dyn crate::parsing::Parser + Send + Sync>>>,
         logger: Arc<Logger>,
         max_concurrency: usize,
-        _min_time_request_sec: u64
+        min_time_request_sec: u64
     ) -> Controller {
         let max_pages = providers.len();
         Controller {
@@ -42,6 +43,7 @@ impl Controller {
             sem: Arc::new(Semaphore::new(max_concurrency as isize)),
             providers: providers,
             logger: logger,
+            min_time_request_sec: min_time_request_sec
         }
     }
 
@@ -79,6 +81,7 @@ impl Controller {
                 sem_clone,
                 providers_clone,
                 logger_clone,
+                self.min_time_request_sec,
             );
 
             self.logger

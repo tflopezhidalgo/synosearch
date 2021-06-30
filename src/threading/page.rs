@@ -6,7 +6,6 @@ use std_semaphore::Semaphore;
 use std::thread;
 
 const NOTIFY_FRECUENCY: u64 = 1;
-const MIN_TIME_REQUESTS_SECS: u64 = 0;
 
 pub struct Page {
     /// The word whose synonyms are to find
@@ -19,6 +18,7 @@ pub struct Page {
     sem: Arc<Semaphore>,
     providers: Arc<Vec<Box<dyn crate::parsing::Parser + Send + Sync>>>,
     logger: Arc<Logger>,
+    min_time_request_sec: u64
 }
 
 impl Page {
@@ -34,6 +34,7 @@ impl Page {
         sem: Arc<Semaphore>,
         providers: Arc<Vec<Box<dyn crate::parsing::Parser + Send + Sync>>>,
         logger: Arc<Logger>,
+        min_time_request_sec: u64
     ) -> Page {
         Page {
             word: word,
@@ -42,6 +43,7 @@ impl Page {
             condvar: condvar,
             providers: providers,
             logger: logger,
+            min_time_request_sec: min_time_request_sec
         }
     }
 
@@ -90,7 +92,7 @@ impl Page {
             last = result.0;
 
             // Condition to go out of the loop
-            if now.duration_since(*last).as_secs() >= MIN_TIME_REQUESTS_SECS {
+            if now.duration_since(*last).as_secs() >= self.min_time_request_sec {
                 break;
             }
         }
@@ -103,7 +105,7 @@ impl Page {
 
     /// Handles the request to a page
     pub fn request(self) -> Vec<String> {
-        if MIN_TIME_REQUESTS_SECS == 0 {
+        if self.min_time_request_sec == 0 {
             return self.concurrent_request();
         } else {
             return self.blocking_request();

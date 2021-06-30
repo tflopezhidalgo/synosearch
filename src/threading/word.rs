@@ -22,7 +22,8 @@ pub struct Word {
     /// The semaphore that limits the maximum amount of concurrent requests
     sem: Arc<Semaphore>,
     providers: Arc<Vec<Box<dyn crate::parsing::Parser + Send + Sync>>>,
-    logger: Arc<Logger>
+    logger: Arc<Logger>,
+    min_time_request_sec: u64
 }
 
 impl Word {
@@ -36,6 +37,7 @@ impl Word {
         sem: Arc<Semaphore>,
         providers: Arc<Vec<Box<dyn crate::parsing::Parser + Send + Sync>>>,
         logger: Arc<Logger>,
+        min_time_request_sec: u64
     ) -> Word {
         Word {
             word: word,
@@ -43,7 +45,8 @@ impl Word {
             condvars: condvars,
             page_threads: vec![],
             providers: providers,
-            logger: logger
+            logger: logger,
+            min_time_request_sec: min_time_request_sec
         }
     }
 
@@ -72,6 +75,7 @@ impl Word {
                 sem_clone,
                 providers_clone,
                 logger_clone,
+                self.min_time_request_sec,
             );
             self.page_threads
                 .push(thread::spawn(move || page.request()));
