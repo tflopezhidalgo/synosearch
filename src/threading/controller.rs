@@ -22,6 +22,7 @@ pub struct Controller {
     sem: Arc<Semaphore>,
     providers: Arc<Vec<Box<dyn crate::parsing::Parser + Send + Sync>>>,
     logger: Arc<Logger>,
+    min_time_request_sec: u64
 }
 
 impl Controller {
@@ -31,21 +32,25 @@ impl Controller {
         words: Arc<Vec<String>>,
         providers: Arc<Vec<Box<dyn crate::parsing::Parser + Send + Sync>>>,
         logger: Arc<Logger>,
+        max_concurrency: usize,
+        min_time_request_sec: u64
     ) -> Controller {
+        let max_pages = providers.len();
         Controller {
             words: words,
             word_threads: vec![],
-            condvars: Controller::init_condvars(),
-            sem: Arc::new(Semaphore::new(crate::MAX_CONCURRENCY as isize)),
+            condvars: Controller::init_condvars(max_pages),
+            sem: Arc::new(Semaphore::new(max_concurrency as isize)),
             providers: providers,
             logger: logger,
+            min_time_request_sec: min_time_request_sec
         }
     }
 
     /// Initializes the condvar for each page from 0 to MAX_PAGES
-    fn init_condvars() -> Arc<Vec<Arc<(Mutex<Instant>, Condvar)>>> {
+    fn init_condvars(max_pages: usize) -> Arc<Vec<Arc<(Mutex<Instant>, Condvar)>>> {
         let mut condvars = vec![];
-        for _ in 0..crate::MAX_PAGES {
+        for _ in 0..max_pages {
             condvars.push(Arc::new((Mutex::new(time::Instant::now()), Condvar::new())));
         }
         return Arc::from(condvars);
@@ -76,6 +81,7 @@ impl Controller {
                 sem_clone,
                 providers_clone,
                 logger_clone,
+                self.min_time_request_sec,
             );
 
             self.logger

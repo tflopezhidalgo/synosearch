@@ -23,6 +23,7 @@ pub struct Word {
     sem: Arc<Semaphore>,
     providers: Arc<Vec<Box<dyn crate::parsing::Parser + Send + Sync>>>,
     logger: Arc<Logger>,
+    min_time_request_sec: u64
 }
 
 impl Word {
@@ -36,6 +37,7 @@ impl Word {
         sem: Arc<Semaphore>,
         providers: Arc<Vec<Box<dyn crate::parsing::Parser + Send + Sync>>>,
         logger: Arc<Logger>,
+        min_time_request_sec: u64
     ) -> Word {
         Word {
             word: word,
@@ -44,6 +46,7 @@ impl Word {
             page_threads: vec![],
             providers: providers,
             logger: logger,
+            min_time_request_sec: min_time_request_sec
         }
     }
 
@@ -57,7 +60,7 @@ impl Word {
 
     /// Creates a thread for processing each page
     fn spawn_pages_threads(&mut self) {
-        for i in 0..crate::MAX_PAGES {
+        for i in 0..self.providers.len() {
             let word_clone = self.word.clone();
             let condvar_clone = self.condvars[i as usize].clone();
             let sem_clone = self.sem.clone();
@@ -72,6 +75,7 @@ impl Word {
                 sem_clone,
                 providers_clone,
                 logger_clone,
+                self.min_time_request_sec,
             );
             self.page_threads
                 .push(thread::spawn(move || page.request()));
