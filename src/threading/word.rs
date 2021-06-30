@@ -22,7 +22,7 @@ pub struct Word {
     /// The semaphore that limits the maximum amount of concurrent requests
     sem: Arc<Semaphore>,
     providers: Arc<Vec<Box<dyn crate::parsing::Parser + Send + Sync>>>,
-    logger: Arc<Logger>,
+    logger: Arc<Logger>
 }
 
 impl Word {
@@ -43,7 +43,7 @@ impl Word {
             condvars: condvars,
             page_threads: vec![],
             providers: providers,
-            logger: logger,
+            logger: logger
         }
     }
 
@@ -57,7 +57,7 @@ impl Word {
 
     /// Creates a thread for processing each page
     fn spawn_pages_threads(&mut self) {
-        for i in 0..crate::MAX_PAGES {
+        for i in 0..self.providers.len() {
             let word_clone = self.word.clone();
             let condvar_clone = self.condvars[i as usize].clone();
             let sem_clone = self.sem.clone();
