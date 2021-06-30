@@ -37,27 +37,15 @@ fn usage() -> i32 {
     return -1;
 }
 
-fn starting(mode: String, threads: usize, timeout: u64, logfile: String, inputfile: String) {
-    println!();
-    println!(
-        "Taking words from {:?}. Logging messages will be saved to: {:?}.",
-        &inputfile, &logfile
-    );
-    println!(
-        "Starting in {} mode, using up to {} threads, and {} secs. as request timeout.",
-        &mode, &threads, &timeout
-    );
-    println!();
-}
-
-fn run_actors(words: Vec<String>, logger: Arc<Logger>) {
+fn run_actors(words: Vec<String>, logger: Arc<Logger>,
+    max_concurrency: usize, min_time_request_sec: u64) {
     let system = System::new();
     let mut words_arc = vec![];
     for w in words {
         words_arc.push(Arc::new(w));
     }
 
-    let worker = Arc::new(SyncArbiter::start(MAX_CONCURRENCY, || Worker));
+    let worker = Arc::new(SyncArbiter::start(max_concurrency, || Worker));
 
     system.block_on(async {
         let mut gatekeepers = vec![];
@@ -67,7 +55,7 @@ fn run_actors(words: Vec<String>, logger: Arc<Logger>) {
                     worker: worker.clone(),
                     last: std::time::Instant::now() - std::time::Duration::from_secs(10000),
                     parser_i: i as u32,
-                    sleep_time: MIN_TIME_REQUESTS_SECS,
+                    sleep_time: min_time_request_sec,
                     logger: logger.clone(),
                 }
                 .start(),
@@ -139,7 +127,8 @@ fn run_threads(words: Vec<String>, logger: Arc<Logger>) {
     controller.process_words_concurrently();
 }
 
-fn chose_mode(mode: String, filename: String) -> i32 {
+fn chose_mode(mode: String, filename: String, 
+    max_concurrency: usize, min_time_request_sec: u64) -> i32 {
     let logger = match Logger::new(LOG_FILENAME) {
         Ok(logger) => Arc::new(logger),
         Err(e) => {
@@ -160,24 +149,10 @@ fn chose_mode(mode: String, filename: String) -> i32 {
 
     match mode.as_str() {
         "actors" => {
-            starting(
-                mode,
-                MAX_CONCURRENCY,
-                MIN_TIME_REQUESTS_SECS,
-                LOG_FILENAME.to_string(),
-                filename,
-            );
-            run_actors(words, logger.clone());
+            run_actors(words, logger.clone(), max_concurrency, min_time_request_sec);
             return 0;
         }
         "threads" => {
-            starting(
-                mode,
-                MAX_CONCURRENCY,
-                MIN_TIME_REQUESTS_SECS,
-                LOG_FILENAME.to_string(),
-                filename,
-            );
             run_threads(words, logger.clone());
             return 0;
         }
@@ -190,8 +165,27 @@ fn chose_mode(mode: String, filename: String) -> i32 {
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    if args.len() != 3 {
+    if args.len() < 3 || args.len() > 5 || args.len() == 4 {
         process::exit(usage());
+    } 
+
+    let mode: String = args[1].clone();
+    let filename: String = args[2].clone();
+    let mut max_concurrency: usize = 0;
+    let mut min_time_request_sec: u64 = 0;
+
+    if args.len() == 5 {
+        max_concurrency = match args[3].parse::<usize>() {
+            Ok(result) => result,
+            Err(_) => 0
+        };
+
+        min_time_request_sec = match args[4].parse::<u64>() {
+            Ok(result) => result,
+            Err(_) => 0
+        };
+
     }
-    process::exit(chose_mode(args[1].clone(), args[2].clone()));
+    process::exit(chose_mode(mode, filename, 
+        max_concurrency, min_time_request_sec));
 }
