@@ -4,8 +4,7 @@ mod counter;
 #[path = "../parsing/parser.rs"]
 mod parser;
 
-use crate::main_actors::SynonymRequest;
-use crate::main_actors::AvailableParsers;
+use crate::main_actors::{SynonymRequest, AvailableParsers};
 use crate::main_actors::messages::{WorkerSynonymsRequest, SynonymsResult, GatekeeperRequest, Increment};
 use actix::prelude::*;
 use actix::{Actor, Context, SyncContext};
@@ -207,7 +206,7 @@ impl Handler<Increment> for CounterActor {
     fn handle(&mut self, _: Increment, _: &mut Context<Self>) -> Self::Result {
         self.count += 1;
         if self.count == self.limit {
-            //System::current().stop();
+            System::current().stop();
         }
     }
 }
