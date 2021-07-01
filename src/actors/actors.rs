@@ -1,22 +1,18 @@
-#[path = "utils/counter.rs"]
+#[path = "../utils/counter.rs"]
 mod counter;
-use actix::clock::Sleep;
-use actix::fut::future::FutureWrap;
-use actix::fut::wrap_future;
-use counter::Counter;
+
+#[path = "../parsing/parser.rs"]
+mod parser;
 
 use actix::prelude::*;
 use actix::{Actor, Context, SyncContext};
-
-use std::error::Error;
-use std::future::Future;
-use std::pin::Pin;
 use std::sync::Arc;
-use std::vec;
+
 
 use crate::logger::Logger;
+use counter::Counter;
 use crate::{AvailableParsers, messages::*};
-use crate::parsing::{MerriamWebsterProvider, Parser, ThesaurusProvider, YourDictionaryProvider};
+use parser::{MerriamWebsterProvider, Parser, ThesaurusProvider, YourDictionaryProvider};
 
 /// Worker actor. Used in a pool of actors.
 /// Responsible for requesting to the synonyms page
@@ -78,7 +74,7 @@ impl Actor for Gatekeeper {
 impl Handler<GatekeeperRequest> for Gatekeeper {
     type Result = ();
 
-    fn handle(&mut self, msg: GatekeeperRequest, ctx: &mut Context<Self>) -> Self::Result {
+    fn handle(&mut self, msg: GatekeeperRequest, _ctx: &mut Context<Self>) -> Self::Result {
         self.logger.info(format!("Gatekeeper recieved request for word {}", msg.target));
         let elapsed = std::time::Instant::now()
             .duration_since(self.last)

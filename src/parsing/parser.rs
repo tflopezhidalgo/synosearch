@@ -1,61 +1,16 @@
 use crate::Arc;
 use crate::Logger;
 
-use reqwest::header::USER_AGENT;
+mod request_provider;
+use request_provider::RequestProvider;
+
+
 const APP_USER_AGENT: &str = "curl/7.68.0";
-const MESSAGE_INIT: &str = "Get request from";
-const MESSAGE_GET_CONTEXT: &str = "Get context request from";
+
 const MESSAGE_RETURN_SYNONIMOUS: &str = "Return synonimous from";
 
 pub trait Parser {
     fn parse(&self, target: String) -> Vec<String>;
-}
-
-struct RequestProviders {
-    url: String,
-    logger: Arc<Logger>
-}
-
-impl RequestProviders {
-
-    fn new(url: String, logger: Arc<Logger>) -> Self {
-        RequestProviders{url, logger}
-    }
-
-    fn make_request(&self) -> String {
-        self.logger
-            .info(format!("{} URL: {}", MESSAGE_INIT, self.url));
-        let request = match reqwest::blocking::get(self.url.clone()) {
-            Ok(request) => request,
-            Err(error) => panic!("Error request from {}: {:?}", self.url, error),
-        };
-
-        self.logger.info(format!("{} URL: {}", MESSAGE_GET_CONTEXT, self.url));
-
-        let contents = match request.text() {
-            Ok(contents) => contents,
-            Err(error) => panic!("Error reading request from {:?}: {:?}", self.url, error),
-        };
-        return contents;
-    }
-
-    fn make_request_client(&self, user_agent: &str) -> String {
-        self.logger
-            .info(format!("{} URL: {}", MESSAGE_INIT, self.url));
-        let client = reqwest::blocking::Client::new();
-        let res = match client.get(self.url.clone()).header(USER_AGENT, user_agent).send() {
-            Ok(request) => request,
-            Err(error) => panic!("Error request from {}: {:?}", self.url, error),
-        };
-
-        self.logger.info(format!("{} URL: {}", MESSAGE_GET_CONTEXT, self.url));
-        let contents = match res.text() {
-            Ok(contents) => contents,
-            Err(error) => panic!("Error reading request from {}: {:?}", self.url, error),
-        };
-
-        return contents;
-    }
 }
 
 /* -- theaurus -- */
@@ -75,7 +30,7 @@ const URL_THERASAURUS: &str = "https://www.thesaurus.com/browse/";
 impl Parser for ThesaurusProvider {
     fn parse(&self, target: String) -> Vec<String> {
         let url = format!("{}{}", URL_THERASAURUS, target);
-        let contents = RequestProviders::new(url.clone(), self.logger.clone()).
+        let contents = RequestProvider::new(url.clone(), self.logger.clone()).
             make_request();
 
         let vec_class = contents.split("e1ccqdb60\">").collect::<Vec<&str>>();
@@ -118,7 +73,7 @@ const URL_YOURDICTIONARY: &str = "https://thesaurus.yourdictionary.com/";
 impl Parser for YourDictionaryProvider {
     fn parse(&self, target: String) -> Vec<String> {
         let url = format!("{}{}", URL_YOURDICTIONARY, target);
-        let contents = RequestProviders::new(url.clone(), self.logger.clone()).
+        let contents = RequestProvider::new(url.clone(), self.logger.clone()).
             make_request_client(APP_USER_AGENT);
         
         let vec_class = contents
@@ -167,7 +122,7 @@ const URL_MERRIAM_WEBSTER: &str = "https://www.merriam-webster.com/thesaurus/";
 impl Parser for MerriamWebsterProvider {
     fn parse(&self, target: String) -> Vec<String> {
         let url = format!("{}{}", URL_MERRIAM_WEBSTER, target);
-        let contents = RequestProviders::new(url.clone(), self.logger.clone()).
+        let contents = RequestProvider::new(url.clone(), self.logger.clone()).
             make_request();
 
         let vec_class = contents
