@@ -1,15 +1,21 @@
 #[path = "utils/counter.rs"]
 mod counter;
+use actix::clock::Sleep;
+use actix::fut::future::FutureWrap;
+use actix::fut::wrap_future;
 use counter::Counter;
 
 use actix::prelude::*;
 use actix::{Actor, Context, SyncContext};
 
+use std::error::Error;
+use std::future::Future;
+use std::pin::Pin;
 use std::sync::Arc;
 use std::vec;
 
 use crate::logger::Logger;
-use crate::messages::*;
+use crate::{AvailableParsers, messages::*};
 use crate::parsing::{MerriamWebsterProvider, Parser, ThesaurusProvider, YourDictionaryProvider};
 
 /// Worker actor. Used in a pool of actors.
@@ -28,29 +34,18 @@ impl Handler<WorkerSynonymsRequest> for Worker {
         request: WorkerSynonymsRequest,
         _: &mut SyncContext<Self>,
     ) -> Self::Result {
-        let tmp = (*request.target).clone();
 
-        let parsers: Vec<Box<Arc<dyn Parser>>> = vec![
-            Box::new(Arc::new(ThesaurusProvider::new(request.logger.clone()))),
-            Box::new(Arc::new(YourDictionaryProvider::new(
-                request.logger.clone(),
-            ))),
-            Box::new(Arc::new(MerriamWebsterProvider::new(
-                request.logger.clone(),
-            ))),
-        ];
-
-        let syn = match request.parser_i {
-            0 => parsers[0].clone().parse(tmp.clone()),
-            1 => parsers[1].clone().parse(tmp.clone()),
-            2 => parsers[2].clone().parse(tmp.clone()),
-            _ => vec![],
+        let parser: Option<Box<dyn Parser>> = match *request.parser {
+            AvailableParsers::Thesaurus => Some(Box::new(ThesaurusProvider::new(request.logger.clone()))),
+            AvailableParsers::YourDictionary => Some(Box::new(YourDictionaryProvider::new(request.logger.clone()))),
+            AvailableParsers::MerriamWebster => Some(Box::new(MerriamWebsterProvider::new(request.logger.clone()))),
         };
 
-        request.logger.info(format!("Worker making request for {}", tmp));
-        match request.response_addr.try_send(SynonymsResult {
-            synonyms: Arc::new(syn),
-        }) {
+        request.logger.info(format!("Worker making request for {}", (&request.target).to_string()));
+
+        let synonyms = Arc::new(parser.unwrap().parse((&request.target).to_string()));
+
+        match request.response_addr.try_send(SynonymsResult { synonyms }) {
             Ok(_) => {}
             Err(_) => panic!("Error al enviar resultados de sinonimos"),
         }
@@ -67,7 +62,7 @@ pub struct Gatekeeper {
     pub last: std::time::Instant,
 
     /// Parser index.
-    pub parser_i: u32,
+    pub parser: Arc<AvailableParsers>,
 
     /// Sleep time between concurrent request to the same site.
     pub sleep_time: u64,
@@ -83,21 +78,27 @@ impl Actor for Gatekeeper {
 impl Handler<GatekeeperRequest> for Gatekeeper {
     type Result = ();
 
-    fn handle(&mut self, msg: GatekeeperRequest, _: &mut Context<Self>) -> Self::Result {
+    fn handle(&mut self, msg: GatekeeperRequest, ctx: &mut Context<Self>) -> Self::Result {
         self.logger.info(format!("Gatekeeper recieved request for word {}", msg.target));
         let elapsed = std::time::Instant::now()
             .duration_since(self.last)
             .as_secs();
+
         if elapsed < self.sleep_time {
             let sleep_time = std::time::Duration::from_secs(self.sleep_time - elapsed);
-            self.logger.info(format!("Gatekeeper sleeping by {} secs.", sleep_time.as_secs()));
+            self.logger.info(format!("Gatekeeper {:?} sleeping by {} secs.", &self.parser, sleep_time.as_secs()));
             std::thread::sleep(sleep_time);
+            //ctx.wait(wrap_future(actix::clock::sleep(sleep_time)));
+            //Box::pin(async move {
+            //    println!("sleeping ....");
+            //    actix::clock::sleep(sleep_time).await;
+            //});
         }
 
         let worker_request = WorkerSynonymsRequest {
-            response_addr: msg.response_addr,
             target: msg.target.clone(),
-            parser_i: self.parser_i,
+            response_addr: msg.response_addr,
+            parser: self.parser.clone(),
             logger: self.logger.clone(),
         };
 
@@ -208,7 +209,7 @@ impl Handler<Increment> for CounterActor {
     fn handle(&mut self, _: Increment, _: &mut Context<Self>) -> Self::Result {
         self.count += 1;
         if self.count == self.limit {
-            System::current().stop();
+            //System::current().stop();
         }
     }
 }

@@ -2,7 +2,7 @@ use actix::prelude::*;
 
 use std::sync::Arc;
 
-use crate::logger::Logger;
+use crate::{AvailableParsers, logger::Logger};
 
 #[derive(Message)]
 #[rtype(result = "()")]
@@ -30,7 +30,7 @@ pub struct GatekeeperRequest {
 pub struct WorkerSynonymsRequest {
     pub target: Arc<String>,
     pub response_addr: Arc<Recipient<SynonymsResult>>,
-    pub parser_i: u32,
+    pub parser: Arc<AvailableParsers>,
     pub logger: Arc<Logger>,
 }
 

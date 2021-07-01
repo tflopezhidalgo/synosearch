@@ -5,6 +5,7 @@ mod parsing;
 use actix::prelude::*;
 
 use std::env;
+use std::fmt::Debug;
 use std::process;
 use std::sync::Arc;
 
@@ -26,10 +27,17 @@ mod file_reader;
 use file_reader::FileReader;
 
 const NOTIFY_FRECUENCY: u64 = 1;
-const MIN_TIME_REQUESTS_SECS: u64 = 0;
+const MIN_TIME_REQUESTS_SECS: u64 = 10;
 const MAX_CONCURRENCY: usize = 10;
 const MAX_PAGES: i32 = 3;
 const LOG_FILENAME: &str = "log.txt";
+
+#[derive(Debug)]
+pub enum AvailableParsers{
+    YourDictionary,
+    MerriamWebster,
+    Thesaurus
+}
 
 fn usage() -> i32 {
     let args: Vec<String> = env::args().collect();
@@ -59,14 +67,20 @@ fn run_actors(words: Vec<String>, logger: Arc<Logger>) {
 
     let worker = Arc::new(SyncArbiter::start(MAX_CONCURRENCY, || Worker));
 
+    let parsers = vec!(
+        AvailableParsers::YourDictionary,
+        AvailableParsers::MerriamWebster,
+        AvailableParsers::Thesaurus
+    );
+
     system.block_on(async {
         let mut gatekeepers = vec![];
-        for i in 0..(MAX_PAGES + 1) {
+        for parser_type in parsers {
             gatekeepers.push(Arc::new(
                 Gatekeeper {
                     worker: worker.clone(),
                     last: std::time::Instant::now() - std::time::Duration::from_secs(10000),
-                    parser_i: i as u32,
+                    parser: Arc::new(parser_type),
                     sleep_time: MIN_TIME_REQUESTS_SECS,
                     logger: logger.clone(),
                 }
