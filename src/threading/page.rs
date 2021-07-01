@@ -16,7 +16,7 @@ pub struct Page {
     condvar: Arc<(Mutex<std::time::Instant>, Condvar)>,
     /// The semaphore that limits the maximum amount of concurrent requests
     sem: Arc<Semaphore>,
-    providers: Arc<Vec<Box<dyn crate::parsing::Parser + Send + Sync>>>,
+    providers: Arc<Vec<Box<dyn crate::parser::Parser + Send + Sync>>>,
     logger: Arc<Logger>,
     min_time_request_sec: u64
 }
@@ -32,7 +32,7 @@ impl Page {
         id: usize,
         condvar: Arc<(Mutex<std::time::Instant>, Condvar)>,
         sem: Arc<Semaphore>,
-        providers: Arc<Vec<Box<dyn crate::parsing::Parser + Send + Sync>>>,
+        providers: Arc<Vec<Box<dyn crate::parser::Parser + Send + Sync>>>,
         logger: Arc<Logger>,
         min_time_request_sec: u64
     ) -> Page {

@@ -1,7 +1,3 @@
-mod actors;
-mod messages;
-mod parsing;
-
 use actix::prelude::*;
 
 use std::env;
@@ -9,10 +5,17 @@ use std::fmt::Debug;
 use std::process;
 use std::sync::Arc;
 
-use crate::actors::CounterActor;
-use crate::actors::{Gatekeeper, PerWordWorker, Worker};
-use crate::messages::SynonymRequest;
-use parsing::{MerriamWebsterProvider, Parser, ThesaurusProvider, YourDictionaryProvider};
+#[path = "actors/messages.rs"]
+mod messages;
+use messages::SynonymRequest;
+
+#[path = "actors/actors.rs"]
+mod actors;
+use actors::{CounterActor, Gatekeeper, PerWordWorker, Worker};
+
+#[path = "parsing/parser.rs"]
+mod parser;
+use parser::{MerriamWebsterProvider, Parser, ThesaurusProvider, YourDictionaryProvider};
 
 #[path = "threading/controller.rs"]
 mod controller;
@@ -26,10 +29,6 @@ use logger::Logger;
 mod file_reader;
 use file_reader::FileReader;
 
-const NOTIFY_FRECUENCY: u64 = 1;
-const MIN_TIME_REQUESTS_SECS: u64 = 10;
-const MAX_CONCURRENCY: usize = 10;
-const MAX_PAGES: i32 = 3;
 const LOG_FILENAME: &str = "log.txt";
 
 #[derive(Debug)]
