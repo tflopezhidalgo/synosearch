@@ -16,6 +16,7 @@ pub struct FileReader {
 
 impl FileReader {
     pub fn new(filename: String, logger: Arc<Logger>) -> Self {
+        println!("Taking words from {:?}", filename); 
         FileReader { filename, logger }
     }
 

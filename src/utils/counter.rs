@@ -3,6 +3,7 @@ use crate::Logger;
 use std::collections::HashMap;
 
 /* COUNTER */
+const JOIN_CHAR: &str = " | ";
 
 pub struct Counter;
 
@@ -19,9 +20,15 @@ impl Counter {
 
         let data = s_counter
             .iter()
-            .map(|(k, v)| format!("{} ({})", k, v))
+            .map(|(k, v)| {
+                if *v == 1 {
+                    format!("{}", k)
+                } else {
+                    format!("{} ({})", k, v)
+                }
+            })
             .collect::<Vec<String>>()
-            .join(" | ");
+            .join(JOIN_CHAR);
 
         println!("{}\n", data);
 

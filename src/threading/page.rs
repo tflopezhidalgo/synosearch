@@ -1,7 +1,11 @@
+use std::time::Duration;
 use crate::Logger;
 use std::sync::{Arc, Condvar, Mutex};
 use std::time;
 use std_semaphore::Semaphore;
+use std::thread;
+
+const NOTIFY_FRECUENCY: u64 = 1;
 
 pub struct Page {
     /// The word whose synonyms are to find
@@ -14,6 +18,7 @@ pub struct Page {
     sem: Arc<Semaphore>,
     providers: Arc<Vec<Box<dyn crate::parsing::Parser + Send + Sync>>>,
     logger: Arc<Logger>,
+    min_time_request_sec: u64
 }
 
 impl Page {
@@ -29,6 +34,7 @@ impl Page {
         sem: Arc<Semaphore>,
         providers: Arc<Vec<Box<dyn crate::parsing::Parser + Send + Sync>>>,
         logger: Arc<Logger>,
+        min_time_request_sec: u64
     ) -> Page {
         Page {
             word: word,
@@ -37,14 +43,15 @@ impl Page {
             condvar: condvar,
             providers: providers,
             logger: logger,
+            min_time_request_sec: min_time_request_sec
         }
     }
 
     fn send_request(&self) -> Vec<String> {
         // Uncomment for debugging the concurrency
-        // println!("WORD {:?} \t PAGE {:?} \t TRYING TO DO A REQUEST", self.word, self.id);
+        println!("WORD {:?} \t PAGE {:?} \t TRYING TO DO A REQUEST", self.word, self.id);
         self.sem.acquire();
-        // println!("WORD {:?} \t PAGE {:?} \t DOING REQUEST ---------------", self.word, self.id);
+        println!("WORD {:?} \t PAGE {:?} \t DOING REQUEST ---------------", self.word, self.id);
         let word_clone = self.word.clone();
 
         let vec = self.providers[self.id].parse(word_clone.to_string());
@@ -53,9 +60,9 @@ impl Page {
             self.word, self.id, vec
         ));
 
-        // thread::sleep(Duration::from_millis(10000));
+        thread::sleep(Duration::from_millis(10000));
         self.sem.release();
-        // println!("WORD {:?} \t PAGE {:?} \t FINISHED REQUEST", self.word, self.id);
+        println!("WORD {:?} \t PAGE {:?} \t FINISHED REQUEST", self.word, self.id);
         self.logger.info(format!(
             "INFO: WORD {:?} \t PAGE {:?} \t FINISHED REQUEST",
             self.word, self.id
@@ -77,7 +84,7 @@ impl Page {
         loop {
             /* https://doc.rust-lang.org/nightly/std/sync/struct.Condvar.html#method.wait_timeout */
             // A notify is sent every NOTIFY_FREQUENCY seconds
-            let timeout = time::Duration::from_millis(crate::NOTIFY_FRECUENCY);
+            let timeout = time::Duration::from_millis(NOTIFY_FRECUENCY);
             let result = cvar.wait_timeout(last, timeout).unwrap();
 
             // At this point a notify() has been made or a timeout has occured
@@ -85,7 +92,7 @@ impl Page {
             last = result.0;
 
             // Condition to go out of the loop
-            if now.duration_since(*last).as_secs() >= crate::MIN_TIME_REQUESTS_SECS {
+            if now.duration_since(*last).as_secs() >= self.min_time_request_sec {
                 break;
             }
         }
@@ -98,7 +105,7 @@ impl Page {
 
     /// Handles the request to a page
     pub fn request(self) -> Vec<String> {
-        if crate::MIN_TIME_REQUESTS_SECS == 0 {
+        if self.min_time_request_sec == 0 {
             return self.concurrent_request();
         } else {
             return self.blocking_request();
