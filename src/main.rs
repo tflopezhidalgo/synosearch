@@ -24,6 +24,7 @@ const MESSAGE_INVALID_MODE: &str = "Invalid mode";
 
 fn usage() -> i32 {
     let args: Vec<String> = env::args().collect();
+    println!("Usage: {} <actors|threads> <input file>", args[0]);
     println!("Usage: {} <actors|threads> <input file> <max_concurrency> <min_time_request_sec>", args[0]);
     return -1;
 }
