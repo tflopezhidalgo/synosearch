@@ -1,6 +1,7 @@
 #[path = "../threading/word.rs"]
 mod word;
 
+use crate::main_threads::Parser;
 use crate::Logger;
 use std::sync::{Arc, Condvar, Mutex};
 use std::thread::{self, JoinHandle};
@@ -8,6 +9,7 @@ use std::time::Instant;
 use std::{time, vec};
 use std_semaphore::Semaphore;
 use word::Word;
+
 
 /// Handles the main thread
 /// Spawns the thread for each word and controls the concurrency between them
@@ -20,7 +22,7 @@ pub struct Controller {
     condvars: Arc<Vec<Arc<(Mutex<Instant>, Condvar)>>>,
     /// The semaphore that limits the maximum amount of concurrent requests
     sem: Arc<Semaphore>,
-    providers: Arc<Vec<Box<dyn crate::parser::Parser + Send + Sync>>>,
+    providers: Arc<Vec<Box<dyn Parser + Send + Sync>>>,
     logger: Arc<Logger>,
     min_time_request_sec: u64
 }
@@ -30,7 +32,7 @@ impl Controller {
     /// * words: The words whose synonyms are to find
     pub fn new(
         words: Arc<Vec<String>>,
-        providers: Arc<Vec<Box<dyn crate::parser::Parser + Send + Sync>>>,
+        providers: Arc<Vec<Box<dyn Parser + Send + Sync>>>,
         logger: Arc<Logger>,
         max_concurrency: usize,
         min_time_request_sec: u64

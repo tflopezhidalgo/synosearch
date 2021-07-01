@@ -1,25 +1,12 @@
-use actix::prelude::*;
+mod main_threads;
+mod main_actors;
+
+use crate::main_threads::main_threads;
+use crate::main_actors::main_actors;
 
 use std::env;
-use std::fmt::Debug;
 use std::process;
 use std::sync::Arc;
-
-#[path = "actors/messages.rs"]
-mod messages;
-use messages::SynonymRequest;
-
-#[path = "actors/actors.rs"]
-mod actors;
-use actors::{CounterActor, Gatekeeper, PerWordWorker, Worker};
-
-#[path = "parsing/parser.rs"]
-mod parser;
-use parser::{MerriamWebsterProvider, Parser, ThesaurusProvider, YourDictionaryProvider};
-
-#[path = "threading/controller.rs"]
-mod controller;
-use controller::Controller;
 
 #[path = "utils/logger.rs"]
 mod logger;
@@ -30,13 +17,10 @@ mod file_reader;
 use file_reader::FileReader;
 
 const LOG_FILENAME: &str = "log.txt";
+const MESSAGE_LOGGER_ERROR: &str = "Unable to open logger file ";
+const MESSAGE_OPEN_FILE_ERROR: &str = "Unable to open file";
+const MESSAGE_INVALID_MODE: &str = "Invalid mode";
 
-#[derive(Debug)]
-pub enum AvailableParsers{
-    YourDictionary,
-    MerriamWebster,
-    Thesaurus
-}
 
 fn usage() -> i32 {
     let args: Vec<String> = env::args().collect();
@@ -51,109 +35,13 @@ fn starting(mode: String, threads: usize, timeout: u64) {
     );
 }
 
-fn run_actors(words: Vec<String>, logger: Arc<Logger>, max_concurrency: usize,
-        min_time_request_sec: u64) {
-    let system = System::new();
-    let mut words_arc = vec![];
-    for w in words {
-        words_arc.push(Arc::new(w));
-    }
-
-    let worker = Arc::new(SyncArbiter::start(max_concurrency, || Worker));
-
-    let parsers = vec!(
-        AvailableParsers::YourDictionary,
-        AvailableParsers::MerriamWebster,
-        AvailableParsers::Thesaurus
-    );
-
-    system.block_on(async {
-        let mut gatekeepers = vec![];
-        for parser_type in parsers {
-            gatekeepers.push(Arc::new(
-                Gatekeeper {
-                    worker: worker.clone(),
-                    last: std::time::Instant::now() - std::time::Duration::from_secs(10000),
-                    parser: Arc::new(parser_type),
-                    sleep_time: min_time_request_sec,
-                    logger: logger.clone(),
-                }
-                .start(),
-            ))
-        }
-
-        let gatekeepers = Arc::new(gatekeepers);
-
-        let c_actor = Arc::new(
-            CounterActor {
-                limit: words_arc.len() as u32,
-                count: 0,
-            }
-            .start(),
-        );
-
-        let mut word_workers = vec![];
-
-        for w in words_arc {
-            word_workers.push(
-                PerWordWorker {
-                    target: w.clone(),
-                    gatekeepers: gatekeepers.clone(),
-                    lefting: gatekeepers.len() as u32,
-                    acum: vec![],
-                    logger: logger.clone(),
-                    counter: c_actor.clone(),
-                }
-                .start()
-                .send(SynonymRequest { target: w.clone() })
-                .await,
-            );
-        }
-
-        let _ = word_workers
-            .iter()
-            .map(|future| match future {
-                Ok(()) => (),
-                Err(e) => {
-                    println!("Unable to send word to actor: {}", e)
-                }
-            })
-            .collect::<()>();
-        ()
-    });
-
-    match system.run() {
-        Ok(_) => {}
-        Err(e) => panic!("Unable to run actors' system: {}", e),
-    };
-}
-
-fn run_threads(words: Vec<String>, logger: Arc<Logger>, max_concurrency: usize,
-        min_time_request_sec: u64) {
-    let p1 = ThesaurusProvider::new(logger.clone());
-    let p2 = YourDictionaryProvider::new(logger.clone());
-    let p3 = MerriamWebsterProvider::new(logger.clone());
-
-    let mut providers: Vec<Box<dyn Parser + Send + Sync>> = Vec::new();
-    providers.push(Box::new(p1));
-    providers.push(Box::new(p2));
-    providers.push(Box::new(p3));
-
-    let providers_arc = Arc::from(providers);
-
-    let words_arc = Arc::from(words);
-
-    let controller = Controller::new(words_arc, providers_arc, logger, max_concurrency, min_time_request_sec);
-
-    controller.process_words_concurrently();
-}
 
 fn chose_mode(mode: String, filename: String, max_concurrency: usize,
         min_time_request_sec: u64) -> i32 {
     let logger = match Logger::new(LOG_FILENAME) {
         Ok(logger) => Arc::new(logger),
         Err(e) => {
-            println!("Unable to open logger file {:?}: {}", LOG_FILENAME, e);
+            println!("{} {:?}: {}", MESSAGE_LOGGER_ERROR, LOG_FILENAME, e);
             return -1;
         }
     };
@@ -163,27 +51,23 @@ fn chose_mode(mode: String, filename: String, max_concurrency: usize,
     let words = match f_reader.get_words() {
         Ok(words) => words,
         Err(e) => {
-            println!("Unable to open file {:?}: {}", filename, e);
+            println!("{} {:?}: {}", MESSAGE_OPEN_FILE_ERROR, filename, e);
             return -1;
         }
     };
 
     match mode.as_str() {
         "actors" => {
-            run_actors(words, logger.clone(), max_concurrency, min_time_request_sec);
+            main_actors(words, logger.clone(), max_concurrency, min_time_request_sec);
             return 0;
         }
         "threads" => {
-            starting(
-                mode,
-                max_concurrency,
-                min_time_request_sec
-            );
-            run_threads(words, logger.clone(), max_concurrency, min_time_request_sec);
+            starting(mode, max_concurrency, min_time_request_sec);
+            main_threads(words, logger.clone(), max_concurrency, min_time_request_sec);
             return 0;
         }
         _ => {
-            println!("Invalid mode: {}", mode);
+            println!("{}: {}", MESSAGE_INVALID_MODE, mode);
             return 0;
         }
     }
@@ -194,7 +78,7 @@ fn main() {
     if args.len() < 3 || args.len() > 6 {
         process::exit(usage());
     }
-    let mut max_concurrency = 0;
+    let mut max_concurrency = 1;
     let mut min_time_request_sec = 0;
 
     if args.len() == 5 {

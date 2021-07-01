@@ -2,7 +2,8 @@ use actix::prelude::*;
 
 use std::sync::Arc;
 
-use crate::{AvailableParsers, logger::Logger};
+use crate::main_actors::AvailableParsers;
+use crate::logger::Logger;
 
 #[derive(Message)]
 #[rtype(result = "()")]

@@ -4,6 +4,9 @@ mod counter;
 #[path = "../parsing/parser.rs"]
 mod parser;
 
+use crate::main_actors::SynonymRequest;
+use crate::main_actors::AvailableParsers;
+use crate::main_actors::messages::{WorkerSynonymsRequest, SynonymsResult, GatekeeperRequest, Increment};
 use actix::prelude::*;
 use actix::{Actor, Context, SyncContext};
 use std::sync::Arc;
@@ -11,7 +14,6 @@ use std::sync::Arc;
 
 use crate::logger::Logger;
 use counter::Counter;
-use crate::{AvailableParsers, messages::*};
 use parser::{MerriamWebsterProvider, Parser, ThesaurusProvider, YourDictionaryProvider};
 
 /// Worker actor. Used in a pool of actors.
