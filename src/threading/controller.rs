@@ -1,15 +1,15 @@
 #[path = "../threading/word.rs"]
 mod word;
+use word::Word;
 
-use crate::main_threads::Parser;
+use super::parsing::parser::Parser;
+
 use crate::Logger;
 use std::sync::{Arc, Condvar, Mutex};
 use std::thread::{self, JoinHandle};
 use std::time::Instant;
 use std::{time, vec};
 use std_semaphore::Semaphore;
-use word::Word;
-
 
 /// Handles the main thread
 /// Spawns the thread for each word and controls the concurrency between them

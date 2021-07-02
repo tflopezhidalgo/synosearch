@@ -1,7 +1,8 @@
-use crate::Arc;
-use crate::Logger;
+use std::sync::Arc;
 use std::fs;
 use std::io;
+
+use crate::Logger;
 
 const SPLIT_CHAR: &str = "\n";
 const MESSAGE_INIT: &str = "Read file with words";

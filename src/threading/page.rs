@@ -1,10 +1,12 @@
-use std::time::Duration;
+use super::Parser;
+
 use crate::Logger;
+
 use std::sync::{Arc, Condvar, Mutex};
-use std::time;
+use std::{time, thread};
+use std::time::Duration;
 use std_semaphore::Semaphore;
-use std::thread;
-use crate::main_threads::Parser;
+
 
 const NOTIFY_FRECUENCY: u64 = 1;
 

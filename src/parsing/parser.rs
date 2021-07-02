@@ -1,12 +1,13 @@
-use crate::Arc;
-use crate::Logger;
-
+#[path = "../parsing/request_provider.rs"]
 mod request_provider;
 use request_provider::RequestProvider;
 
+use std::sync::Arc;
+
+use crate::Logger;
+
 
 const APP_USER_AGENT: &str = "curl/7.68.0";
-
 const MESSAGE_RETURN_SYNONIMOUS: &str = "Return synonimous from";
 
 pub trait Parser {

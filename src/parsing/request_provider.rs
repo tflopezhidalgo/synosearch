@@ -1,7 +1,9 @@
-use crate::Arc;
-use crate::Logger;
+use std::sync::Arc;
 
 use reqwest::header::USER_AGENT;
+
+use crate::Logger;
+
 const MESSAGE_INIT: &str = "Get request from";
 const MESSAGE_GET_CONTEXT: &str = "Get context request from";
 

@@ -1,6 +1,7 @@
-use crate::Arc;
-use crate::Logger;
+use std::sync::Arc;
 use std::collections::HashMap;
+
+use crate::Logger;
 
 /* COUNTER */
 const JOIN_CHAR: &str = " | ";

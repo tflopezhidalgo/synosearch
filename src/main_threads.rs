@@ -1,11 +1,11 @@
+use std::sync::Arc;
 #[path = "threading/controller.rs"]
 mod controller;
-use std::sync::Arc;
 use controller::Controller;
 
-#[path = "parsing/parser.rs"]
-mod parser;
-use parser::{MerriamWebsterProvider, Parser, ThesaurusProvider, YourDictionaryProvider};
+#[path = "parsing/mod.rs"]
+mod parsing;
+use parsing::parser::{MerriamWebsterProvider, Parser, ThesaurusProvider, YourDictionaryProvider};
 
 use crate::Logger;
 
