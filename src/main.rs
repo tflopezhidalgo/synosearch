@@ -75,23 +75,18 @@ fn chose_mode(mode: String, filename: String, max_concurrency: usize,
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    if args.len() < 3 || args.len() > 6 {
+    if args.len() != 5 {
         process::exit(usage());
     }
-    let mut max_concurrency = 1;
-    let mut min_time_request_sec = 0;
+    let max_concurrency = match args[3].parse::<usize>() {
+        Ok(result) => result,
+        Err(_) => 0
+    };
 
-    if args.len() == 5 {
-         max_concurrency = match args[3].parse::<usize>() {
-            Ok(result) => result,
-            Err(_) => 0
-        };
-
-        min_time_request_sec = match args[4].parse::<u64>() {
-            Ok(result) => result,
-            Err(_) => 0
-        };
-    }
+    let min_time_request_sec = match args[4].parse::<u64>() {
+        Ok(result) => result,
+        Err(_) => 0
+    };
     process::exit(chose_mode(args[1].clone(), args[2].clone(),
         max_concurrency, min_time_request_sec));
 }
