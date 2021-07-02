@@ -58,6 +58,7 @@ fn chose_mode(mode: String, filename: String, max_concurrency: usize,
 
     match mode.as_str() {
         "actors" => {
+            starting(mode, max_concurrency, min_time_request_sec);
             main_actors(words, logger.clone(), max_concurrency, min_time_request_sec);
             return 0;
         }

@@ -1,15 +1,15 @@
-#[path = "actors/messages.rs"]
-mod messages;
 use crate::Logger;
-use messages::SynonymRequest;
 
-use actix::prelude::*;
-use std::fmt::Debug;
+use actix::prelude::{Actor, System, SyncArbiter};
 use std::sync::Arc;
-
-#[path = "actors/actors.rs"]
+#[path = "./actors/mod.rs"]
 mod actors;
-use actors::{CounterActor, Gatekeeper, PerWordWorker, Worker};
+
+use actors::counter_actor::CounterActor;
+use actors::perwordworker::PerWordWorker;
+use actors::worker::Worker;
+use actors::gatekeeper::Gatekeeper;
+use actors::messages::SynonymRequest;
 
 const MESSAGE_WORKER_ERROR: &str = "Unable to send word to actor:";
 const MESSAGE_SYSTEM_ERROR: &str = "Unable to run actors' system: ";
