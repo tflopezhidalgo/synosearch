@@ -85,7 +85,7 @@ impl PageWorker {
     /// Handles the request when at most one request per page can occur at a time
     fn blocking_request(self) -> Vec<String> {
         let (lock, cvar) = &*self.condvar;
-        let mut last = lock.lock().unwrap();
+        let mut guard = lock.lock().unwrap();
 
         self.logger.info(format!("{} Acquired lock", self));
 
@@ -95,13 +95,13 @@ impl PageWorker {
             let timeout = time::Duration::from_millis(NOTIFY_FRECUENCY);
 
             // Acá no podemos loggear por el loop (llenamos el log de ruido)
-            let result = cvar.wait_timeout(last, timeout).unwrap();
+            let result = cvar.wait_timeout(guard, timeout).unwrap();
             // At this point a notify() has been made or a timeout has occured
             let now = time::Instant::now();
-            last = result.0;
+            guard = result.0;
 
             // Condition to go out of the loop
-            if now.duration_since(*last).as_secs() >= self.min_time_request_sec {
+            if now.duration_since(*guard).as_secs() >= self.min_time_request_sec {
                 break;
             }
         }
