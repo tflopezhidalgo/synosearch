@@ -1,9 +1,6 @@
 #[path = "../utils/counter.rs"]
 mod counter;
 
-#[path = "../parsing/parser.rs"]
-mod parser;
-
 use super::messages::{SynonymRequest, SynonymsResult, GatekeeperRequest, Increment};
 use super::gatekeeper::Gatekeeper;
 use super::counter_actor::CounterActor;
