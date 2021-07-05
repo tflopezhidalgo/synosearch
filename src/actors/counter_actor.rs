@@ -43,10 +43,10 @@ impl Handler<Increment> for CounterActor {
     type Result = ();
 
     fn handle(&mut self, _: Increment, _: &mut Context<Self>) -> Self::Result {
-        self.logger.info(format!("[{}] Recibí Increment", self));
+        self.logger.info(format!("[{}] Received Increment message", self));
         self.count += 1;
         if self.count == self.limit {
-            self.logger.info(format!("[{}] Finalizando sistema", self));
+            self.logger.info(format!("[{}] Stopping current system", self));
             System::current().stop();
         }
     }

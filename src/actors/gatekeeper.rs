@@ -53,7 +53,7 @@ impl Handler<GatekeeperRequest> for Gatekeeper {
     type Result = ();
 
     fn handle(&mut self, msg: GatekeeperRequest, ctx: &mut Context<Self>) -> Self::Result {
-        println!("[{}][{:?}] Recibió palabra: {}", self, self.parser, msg.target);
+        self.logger.info(format!("[{}][{:?}] Receied GatekeeperRequest for: {}", self, self.parser, msg.target));
 
         let worker_request = WorkerSynonymsRequest {
             target: msg.target.clone(),
@@ -63,24 +63,14 @@ impl Handler<GatekeeperRequest> for Gatekeeper {
         };
         match self.worker.try_send(worker_request) {
             Ok(_) => {
-                self.logger.info(
-                    format!(
-                        "Gatekeeper sended request to worker for word {}.", msg.target.clone()
-                    )
-                );
+                self.logger.info(format!("[{}][{:?}] Sended worker request for word {}.", self, self.parser, msg.target.clone()));
             }
             Err(_) => {
                 panic!("No se pudo enviar request a los workers!");
             }
         }
-        match *self.parser {
-            AvailableParsers::MerriamWebster => {
-                let sleep_time = Duration::from_secs(10);
-                ctx.wait(wrap_future(sleep(sleep_time)));
-            },
-            _ => { }
-        }
 
-        println!("[Gatekeeper][{:?}] Finalizando, palabra: {}", self.parser, msg.target);
+        let sleep_time = Duration::from_secs(self.sleep_time);
+        ctx.wait(wrap_future(sleep(sleep_time)));
     }
 }

@@ -57,7 +57,7 @@ impl Handler<SynonymRequest> for PerWordWorker {
     type Result = ();
 
     fn handle(&mut self, request: SynonymRequest, ctx: &mut Context<Self>) -> Self::Result {
-        self.logger.info(format!("[{}] Recibí request para sinónimo {:?}", self, self.target));
+        self.logger.info(format!("[{}] Received SynonymRequest for {:?}", self, self.target));
 
         let me = Arc::new(ctx.address().recipient());
 
@@ -67,7 +67,7 @@ impl Handler<SynonymRequest> for PerWordWorker {
                 target: request.target.clone(),
             };
 
-            self.logger.info(format!("[{}] Enviando request a Gatekeeper para palabra {:?}", self,self.target));
+            self.logger.info(format!("[{}] Sending GatekeeperRequest for word {:?}", self, self.target));
             match gatekeeper.try_send(gatekeeper_request) {
                 Ok(_result) => {}
                 Err(_e) => {
@@ -82,11 +82,11 @@ impl Handler<SynonymsResult> for PerWordWorker {
     type Result = ();
 
     fn handle(&mut self, result: SynonymsResult, _: &mut Context<Self>) -> Self::Result {
-        self.logger.info(format!("[{}] Recibí resultados para sinónimo {:?}", self, self.target));
+        self.logger.info(format!("[{}] Received SynonymsResult for {:?}", self, self.target));
         self.lefting -= 1;
         self.acum.extend_from_slice(&result.synonyms.clone());
         if self.lefting == 0 {
-            self.logger.info(format!("[{}] Anunciando al counter", self));
+            self.logger.info(format!("[{}] Doing acknowledgement to CounterActor", self));
             let tmp: String = (*self.target).clone();
             let tmp2 = self.acum.clone();
             Counter::count(tmp, tmp2, self.logger.clone());
