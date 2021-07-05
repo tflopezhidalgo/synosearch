@@ -1,6 +1,6 @@
 #[path = "../utils/counter.rs"]
 mod counter;
-#[path = "../threading/page.rs"]
+#[path = "../threading/page_worker.rs"]
 mod page;
 
 use crate::Logger;

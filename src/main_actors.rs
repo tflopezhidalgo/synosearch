@@ -58,6 +58,7 @@ pub fn main_actors(words: Vec<String>, logger: Arc<Logger>, max_concurrency: usi
             CounterActor {
                 limit: words_arc.len() as u32,
                 count: 0,
+                logger: logger.clone(),
             }
             .start(),
         );

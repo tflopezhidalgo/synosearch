@@ -63,7 +63,6 @@ impl Handler<GatekeeperRequest> for Gatekeeper {
         };
         match self.worker.try_send(worker_request) {
             Ok(_) => {
-                println!("[Gatekeeper][{:?}] Transmitiendo palabra: {}", self.parser, msg.target);
                 self.logger.info(
                     format!(
                         "Gatekeeper sended request to worker for word {}.", msg.target.clone()

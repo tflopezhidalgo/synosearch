@@ -1,4 +1,4 @@
-#[path = "../threading/word.rs"]
+#[path = "../threading/word_worker.rs"]
 mod word;
 use word::Word;
 

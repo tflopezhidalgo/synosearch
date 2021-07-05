@@ -11,6 +11,7 @@ use super::counter_actor::CounterActor;
 use actix::prelude::*;
 use actix::{Actor, Context};
 
+use std::fmt::Display;
 use std::sync::Arc;
 
 use crate::logger::Logger;
@@ -45,21 +46,28 @@ impl Actor for PerWordWorker {
     type Context = Context<Self>;
 }
 
+impl Display for PerWordWorker {
+
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "PerWordWorker")
+    }
+}
+
 impl Handler<SynonymRequest> for PerWordWorker {
     type Result = ();
 
     fn handle(&mut self, request: SynonymRequest, ctx: &mut Context<Self>) -> Self::Result {
+        self.logger.info(format!("[{}] Recibí request para sinónimo {:?}", self, self.target));
+
         let me = Arc::new(ctx.address().recipient());
 
-        self.logger.info(
-            format!("Sending synonym request for {} word to gatekeeper", self.target)
-        );
         for gatekeeper in self.gatekeepers.iter() {
             let gatekeeper_request = GatekeeperRequest {
                 response_addr: me.clone(),
                 target: request.target.clone(),
             };
 
+            self.logger.info(format!("[{}] Enviando request a Gatekeeper para palabra {:?}", self,self.target));
             match gatekeeper.try_send(gatekeeper_request) {
                 Ok(_result) => {}
                 Err(_e) => {
@@ -74,11 +82,11 @@ impl Handler<SynonymsResult> for PerWordWorker {
     type Result = ();
 
     fn handle(&mut self, result: SynonymsResult, _: &mut Context<Self>) -> Self::Result {
-        let mut tmp = self.lefting;
-        tmp -= 1;
+        self.logger.info(format!("[{}] Recibí resultados para sinónimo {:?}", self, self.target));
+        self.lefting -= 1;
         self.acum.extend_from_slice(&result.synonyms.clone());
-        self.lefting = tmp;
-        if tmp == 0 {
+        if self.lefting == 0 {
+            self.logger.info(format!("[{}] Anunciando al counter", self));
             let tmp: String = (*self.target).clone();
             let tmp2 = self.acum.clone();
             Counter::count(tmp, tmp2, self.logger.clone());
