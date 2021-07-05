@@ -1,7 +1,6 @@
 use std::fs::File;
 use std::io::{Error, Write};
 use std::sync::Mutex;
-use std::thread::current;
 
 #[derive(Debug)]
 pub struct Logger {
@@ -32,12 +31,7 @@ impl Logger {
     }
 
     pub fn info(&self, msg: String) {
-        let me = current();
-        match self.write(format!(
-            "[INFO][{}] - {}",
-            me.name().get_or_insert("??"),
-            msg
-        )) {
+        match self.write(format!("[INFO] - {}", msg)) {
             Ok(_) => {}
             Err(_) => {
                 println!("Unable to write to logging file. Logging messages won't be saved.");

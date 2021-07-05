@@ -4,6 +4,7 @@ use crate::Logger;
 
 use std::sync::{Arc, Condvar, Mutex};
 use std::{time, thread};
+use std::fmt::Display;
 use std::time::Duration;
 use std_semaphore::Semaphore;
 
@@ -22,6 +23,13 @@ pub struct PageWorker {
     providers: Arc<Vec<Box<dyn Parser + Send + Sync>>>,
     logger: Arc<Logger>,
     min_time_request_sec: u64
+}
+
+impl Display for PageWorker {
+
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "[PageWorker][{}]", self.word)
+    }
 }
 
 impl PageWorker {
@@ -70,7 +78,7 @@ impl PageWorker {
             "INFO: WORD {:?} \t PAGE {:?} \t FINISHED REQUEST",
             self.word, self.id
         ));
-        return vec;
+        vec
     }
 
     /// Handles the request when more than one request per page can occur at a time
@@ -103,15 +111,14 @@ impl PageWorker {
         let vec = self.send_request();
         *last = time::Instant::now();
         cvar.notify_all();
-        return vec;
+        vec
     }
 
     /// Handles the request to a page
     pub fn request(self) -> Vec<String> {
         if self.min_time_request_sec == 0 {
             return self.concurrent_request();
-        } else {
-            return self.blocking_request();
         }
+        self.blocking_request()
     }
 }

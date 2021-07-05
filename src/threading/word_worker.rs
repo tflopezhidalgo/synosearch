@@ -5,6 +5,7 @@ mod page;
 
 use crate::Logger;
 use crate::main_threads::Parser;
+use std::fmt::Display;
 use counter::Counter;
 use page::PageWorker;
 use std::sync::{Arc, Condvar, Mutex};
@@ -25,6 +26,13 @@ pub struct WordWorker {
     providers: Arc<Vec<Box<dyn Parser + Send + Sync>>>,
     logger: Arc<Logger>,
     min_time_request_sec: u64
+}
+
+impl Display for WordWorker {
+
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "[WordWorker][{}]", self.word)
+    }
 }
 
 impl WordWorker {

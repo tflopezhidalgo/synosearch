@@ -5,6 +5,7 @@ use word::WordWorker;
 use super::parsing::parser::Parser;
 
 use crate::Logger;
+use std::fmt::Display;
 use std::sync::{Arc, Condvar, Mutex};
 use std::thread::{self, JoinHandle};
 use std::time::Instant;
@@ -25,6 +26,13 @@ pub struct Controller {
     providers: Arc<Vec<Box<dyn Parser + Send + Sync>>>,
     logger: Arc<Logger>,
     min_time_request_sec: u64
+}
+
+impl Display for Controller {
+
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Controller")
+    }
 }
 
 impl Controller {
@@ -60,11 +68,9 @@ impl Controller {
 
     /// Creates a thread for processing each word and waits for all of them to finish
     pub fn process_words_concurrently(mut self) {
-        self.logger
-            .info("Spawn words threads Controller".to_string());
+        self.logger.info(format!("[{}] Spawn words threads", self));
         self.spawn_word_threads();
-        self.logger
-            .info("Join words threads Controller".to_string());
+        self.logger.info(format!("[{}] Join words threads", self));
         self.join_word_threads();
     }
 
