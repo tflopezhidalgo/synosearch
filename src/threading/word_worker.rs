@@ -6,14 +6,14 @@ mod page;
 use crate::Logger;
 use crate::main_threads::Parser;
 use counter::Counter;
-use page::Page;
+use page::PageWorker;
 use std::sync::{Arc, Condvar, Mutex};
 use std::thread::{self, JoinHandle};
 use std_semaphore::Semaphore;
 
 /// Handles the thread of each word
 /// Spawns the thread for each page inside the word and controls the concurrency between them
-pub struct Word {
+pub struct WordWorker {
     /// The word whose synonyms are to find
     word: Arc<String>,
     /// The threads to process the synonym search for each word concurrently
@@ -27,7 +27,7 @@ pub struct Word {
     min_time_request_sec: u64
 }
 
-impl Word {
+impl WordWorker {
     /// Returns a Word with the arguments given
     /// * word: The word whose synonyms are to find
     /// * condvars: The condition variables for each page
@@ -39,8 +39,8 @@ impl Word {
         providers: Arc<Vec<Box<dyn Parser + Send + Sync>>>,
         logger: Arc<Logger>,
         min_time_request_sec: u64
-    ) -> Word {
-        Word {
+    ) -> WordWorker {
+        WordWorker {
             word: word,
             sem: sem,
             condvars: condvars,
@@ -69,7 +69,7 @@ impl Word {
             let logger_clone = self.logger.clone();
 
             self.logger.info("Send request to page threads".to_string());
-            let page = Page::new(
+            let page = PageWorker::new(
                 word_clone,
                 i as usize,
                 condvar_clone,

@@ -4,7 +4,6 @@ use std::collections::HashMap;
 use crate::Logger;
 
 /* COUNTER */
-const JOIN_CHAR: &str = " | ";
 
 pub struct Counter;
 
@@ -29,7 +28,7 @@ impl Counter {
                 }
             })
             .collect::<Vec<String>>()
-            .join(JOIN_CHAR);
+            .join(" | ");
 
         println!("{}\n", data);
 

@@ -1,9 +1,3 @@
-#[path = "../utils/counter.rs"]
-mod counter;
-
-#[path = "../parsing/parser.rs"]
-mod parser;
-
 use super::worker::Worker;
 use super::messages::{WorkerSynonymsRequest, GatekeeperRequest};
 

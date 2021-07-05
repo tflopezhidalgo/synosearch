@@ -1,6 +1,6 @@
 #[path = "../threading/word_worker.rs"]
 mod word;
-use word::Word;
+use word::WordWorker;
 
 use super::parsing::parser::Parser;
 
@@ -77,7 +77,7 @@ impl Controller {
             let providers_clone = self.providers.clone();
             let logger_clone = self.logger.clone();
 
-            let word = Word::new(
+            let word = WordWorker::new(
                 word_clone,
                 condvars_clone,
                 sem_clone,
