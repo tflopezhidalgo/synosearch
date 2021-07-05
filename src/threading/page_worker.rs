@@ -28,7 +28,7 @@ pub struct PageWorker {
 impl Display for PageWorker {
 
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "[PageWorker][{}]", self.word)
+        write!(f, "[PageWorker][{}][{}]", self.word, self.id)
     }
 }
 
@@ -59,25 +59,22 @@ impl PageWorker {
     }
 
     fn send_request(&self) -> Vec<String> {
-        // Uncomment for debugging the concurrency
-        println!("WORD {:?} \t PAGE {:?} \t TRYING TO DO A REQUEST", self.word, self.id);
+        self.logger.info(format!("{} Acquiring semaphore...", self));
+
         self.sem.acquire();
-        println!("WORD {:?} \t PAGE {:?} \t DOING REQUEST ---------------", self.word, self.id);
+
+        self.logger.info(format!("{} Doing request...", self));
+
         let word_clone = self.word.clone();
 
         let vec = self.providers[self.id].parse(word_clone.to_string());
-        self.logger.info(format!(
-            "INFO: WORD {:?} \t PAGE {:?} \t SYNONYMS: {:?}",
-            self.word, self.id, vec
-        ));
 
-        thread::sleep(Duration::from_millis(10000));
+        self.logger.info(format!("{} Request result: {:?}", self, vec));
+
         self.sem.release();
-        println!("WORD {:?} \t PAGE {:?} \t FINISHED REQUEST", self.word, self.id);
-        self.logger.info(format!(
-            "INFO: WORD {:?} \t PAGE {:?} \t FINISHED REQUEST",
-            self.word, self.id
-        ));
+
+        self.logger.info(format!("{} Released semaphore", self));
+
         vec
     }
 
@@ -88,9 +85,12 @@ impl PageWorker {
 
     /// Handles the request when at most one request per page can occur at a time
     fn blocking_request(self) -> Vec<String> {
-        self.logger.info("Get lock blocking request".to_string());
         let (lock, cvar) = &*self.condvar;
         let mut last = lock.lock().unwrap();
+
+        //xxx: Este logueo lo ejecutan varios threads para la misma
+        //     página, ¿por qué?
+        self.logger.info(format!("{} Acquired lock", self));
 
         loop {
             /* https://doc.rust-lang.org/nightly/std/sync/struct.Condvar.html#method.wait_timeout */
@@ -109,8 +109,13 @@ impl PageWorker {
         }
 
         let vec = self.send_request();
+
+        self.logger.info(format!("{} Notifyng and releasing lock", self));
+
         *last = time::Instant::now();
         cvar.notify_all();
+
+
         vec
     }
 

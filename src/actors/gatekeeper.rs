@@ -47,7 +47,7 @@ impl Handler<GatekeeperRequest> for Gatekeeper {
     type Result = ();
 
     fn handle(&mut self, msg: GatekeeperRequest, ctx: &mut Context<Self>) -> Self::Result {
-        self.logger.info(format!("[{}][{:?}] Receied GatekeeperRequest for: {}", self, self.parser, msg.target));
+        self.logger.info(format!("[{}][{:?}] Received GatekeeperRequest for: {}", self, self.parser, msg.target));
 
         let worker_request = WorkerSynonymsRequest {
             target: msg.target.clone(),

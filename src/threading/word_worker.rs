@@ -76,7 +76,9 @@ impl WordWorker {
             let providers_clone = self.providers.clone();
             let logger_clone = self.logger.clone();
 
-            self.logger.info("Send request to page threads".to_string());
+            self.logger.info(
+                format!("{} Spawning thread for {} page", self, i)
+            );
             let page = PageWorker::new(
                 word_clone,
                 i as usize,

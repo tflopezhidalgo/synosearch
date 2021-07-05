@@ -1,17 +1,21 @@
 use std::fs::File;
+use std::fmt::Display;
 use std::sync::Arc;
 use std::io::{BufReader, BufRead, Error};
 
 use crate::Logger;
 
-const MESSAGE_INIT: &str = "Read file with words";
-const MESSAGE_SPLIT: &str = "Split file into vector";
-const MESSAGE_RETURN: &str = "Return vectors of words";
-
 /// FileReader struct
 pub struct FileReader {
     filename: String,
     logger: Arc<Logger>,
+}
+
+impl Display for FileReader {
+
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "FileReader")
+    }
 }
 
 impl FileReader {
@@ -24,9 +28,9 @@ impl FileReader {
     /// `self.filename` splitting by newline separator or a
     /// io::Error.
     pub fn get_words(&self) -> Result<Vec<String>, Error> {
-        self.logger.info(MESSAGE_INIT.to_string());
 
         let file = File::open(&self.filename)?;
+        self.logger.info(format!("[{}] Opened file: {:?}", self, self.filename));
         let reader = BufReader::new(file);
 
         let mut words = vec![];
@@ -34,11 +38,9 @@ impl FileReader {
             words.push(line?.to_string());
         }
 
-        self.logger.info(MESSAGE_SPLIT.to_string());
         words.retain(|x| (x != "" && x != " "));
 
-        self.logger.info(MESSAGE_RETURN.to_string());
-        self.logger.info(format!("Lista palabras: {:?}", words));
+        self.logger.info(format!("[{}] Readed word list: {:?}", self, words));
 
         Ok(words)
     }

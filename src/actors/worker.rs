@@ -37,7 +37,7 @@ impl Handler<WorkerSynonymsRequest> for Worker {
             AvailableParsers::MerriamWebster => Some(Box::new(MerriamWebsterProvider::new(request.logger.clone()))),
         };
 
-        request.logger.info(format!("[{:?}] Worker making request for {}", *request.parser, (&request.target).to_string()));
+        request.logger.info(format!("[{:?}] Worker making request for {:?}", *request.parser, (&request.target).to_string()));
 
         let synonyms = Arc::new(parser.unwrap().parse((&request.target).to_string()));
 
