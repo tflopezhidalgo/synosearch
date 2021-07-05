@@ -18,7 +18,6 @@ impl Logger {
     }
     fn write(&self, message: String) -> Result<(), Error> {
         let message = message + "\n";
-        print!("{}", message);
         match self.file.lock() {
             Ok(mut file) => {
                 (*file).write_all(message.as_bytes())?;

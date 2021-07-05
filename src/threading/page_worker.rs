@@ -3,9 +3,8 @@ use super::Parser;
 use crate::Logger;
 
 use std::sync::{Arc, Condvar, Mutex};
-use std::{time, thread};
+use std::time;
 use std::fmt::Display;
-use std::time::Duration;
 use std_semaphore::Semaphore;
 
 
@@ -88,16 +87,15 @@ impl PageWorker {
         let (lock, cvar) = &*self.condvar;
         let mut last = lock.lock().unwrap();
 
-        //xxx: Este logueo lo ejecutan varios threads para la misma
-        //     página, ¿por qué?
         self.logger.info(format!("{} Acquired lock", self));
 
         loop {
             /* https://doc.rust-lang.org/nightly/std/sync/struct.Condvar.html#method.wait_timeout */
             // A notify is sent every NOTIFY_FREQUENCY seconds
             let timeout = time::Duration::from_millis(NOTIFY_FRECUENCY);
-            let result = cvar.wait_timeout(last, timeout).unwrap();
 
+            // Acá no podemos loggear por el loop (llenamos el log de ruido)
+            let result = cvar.wait_timeout(last, timeout).unwrap();
             // At this point a notify() has been made or a timeout has occured
             let now = time::Instant::now();
             last = result.0;
@@ -107,14 +105,12 @@ impl PageWorker {
                 break;
             }
         }
-
         let vec = self.send_request();
-
-        self.logger.info(format!("{} Notifyng and releasing lock", self));
-
         *last = time::Instant::now();
+
         cvar.notify_all();
 
+        self.logger.info(format!("{} Notifying and releasing lock", self));
 
         vec
     }
