@@ -8,7 +8,10 @@ use crate::main_actors::AvailableParsers;
 
 use super::messages::{WorkerSynonymsRequest, SynonymsResult};
 
-use super::parser::{MerriamWebsterProvider, Parser, ThesaurusProvider, YourDictionaryProvider};
+#[path = "../parsing/parser.rs"]
+mod parser;
+
+use parser::{MerriamWebsterProvider, Parser, ThesaurusProvider, YourDictionaryProvider};
 
 /// Worker actor. Used in a pool of actors.
 /// Responsible for requesting to the synonyms page

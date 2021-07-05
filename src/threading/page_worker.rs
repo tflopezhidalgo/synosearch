@@ -10,7 +10,7 @@ use std_semaphore::Semaphore;
 
 const NOTIFY_FRECUENCY: u64 = 1;
 
-pub struct Page {
+pub struct PageWorker {
     /// The word whose synonyms are to find
     word: Arc<String>,
     /// The id of the page
@@ -24,7 +24,7 @@ pub struct Page {
     min_time_request_sec: u64
 }
 
-impl Page {
+impl PageWorker {
     /// Returns a Page with the arguments given
     /// * word: The word whose synonyms are to find
     /// * id: The id of the page
@@ -38,8 +38,8 @@ impl Page {
         providers: Arc<Vec<Box<dyn Parser + Send + Sync>>>,
         logger: Arc<Logger>,
         min_time_request_sec: u64
-    ) -> Page {
-        Page {
+    ) -> PageWorker {
+        PageWorker {
             word: word,
             id: id,
             sem: sem,
