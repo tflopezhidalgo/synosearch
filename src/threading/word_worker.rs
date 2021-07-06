@@ -60,9 +60,7 @@ impl WordWorker {
 
     /// Creates a thread for sending a request to each page and waits for all of them to finish
     pub fn send_requests_to_pages_concurrently(mut self) {
-        self.logger.info("Spawn words threads Words".to_string());
         self.spawn_pages_threads();
-        self.logger.info("Join words threads Words".to_string());
         self.join_pages_threads();
     }
 
@@ -76,7 +74,7 @@ impl WordWorker {
             let logger_clone = self.logger.clone();
 
             self.logger
-                .info(format!("{} Spawning thread for {} page", self, i));
+                .info(format!("{} Spawning thread for {:?} page", self, i));
             let page = PageWorker::new(
                 word_clone,
                 i as usize,
@@ -93,16 +91,14 @@ impl WordWorker {
 
     /// Waits for each thread in page_threads to finish
     fn join_pages_threads(self) {
-        self.logger
-            .info(format!("Join threads from word: {}", self.word));
+        self.logger.info(format!(
+            "[{}] Joining threads for word: {}",
+            self, self.word
+        ));
         let mut synonyms = Vec::new();
         for page_thread in self.page_threads {
             synonyms.append(&mut page_thread.join().unwrap());
         }
-        self.logger.info(format!(
-            "Get all synonyms from word {} and count",
-            self.word
-        ));
         Counter::count(self.word.to_string(), synonyms, self.logger.clone());
     }
 }

@@ -32,6 +32,6 @@ impl Counter {
 
         println!("{}\n", data);
 
-        logger.info(format!("Mostrando resultados para {:?} en pantalla", word));
+        logger.info(format!("[Counter] Showing results for {:?}", word));
     }
 }

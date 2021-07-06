@@ -2,15 +2,14 @@
 mod request_provider;
 use request_provider::RequestProvider;
 
-use std::sync::Arc;
 use std::fmt::Display;
+use std::sync::Arc;
 
 use crate::Logger;
 
 const URL_THERASAURUS: &str = "https://www.thesaurus.com/browse/";
 const URL_MERRIAM_WEBSTER: &str = "https://www.merriam-webster.com/thesaurus/";
 const URL_YOURDICTIONARY: &str = "https://thesaurus.yourdictionary.com/";
-
 
 pub trait Parser {
     fn parse(&self, target: String) -> Vec<String>;
@@ -54,7 +53,8 @@ impl Parser for ThesaurusProvider {
                 vec.push(target);
             }
         }
-        self.logger.info(format!("[{}] Request for: {}", self, target));
+        self.logger
+            .info(format!("[{}] Parsed content for: {}", self, target));
         vec
     }
 }
@@ -76,7 +76,6 @@ impl Display for YourDictionaryProvider {
         write!(f, "YourDictionaryProvider")
     }
 }
-
 
 impl Parser for YourDictionaryProvider {
     fn parse(&self, target: String) -> Vec<String> {
@@ -104,7 +103,8 @@ impl Parser for YourDictionaryProvider {
                 vec.push(split_link[0].to_string());
             }
         }
-        self.logger.info(format!("[{}] Request for: {}", self, target));
+        self.logger
+            .info(format!("[{}] Parsed content for: {}", self, target));
         vec
     }
 }
@@ -126,7 +126,6 @@ impl Display for MerriamWebsterProvider {
         write!(f, "MerriamWebsterProvider")
     }
 }
-
 
 impl Parser for MerriamWebsterProvider {
     fn parse(&self, target: String) -> Vec<String> {
@@ -155,7 +154,8 @@ impl Parser for MerriamWebsterProvider {
                 vec.push(word);
             }
         }
-        self.logger.info(format!("[{}] Request for: {}", self, target));
+        self.logger
+            .info(format!("[{}] Parsed content for: {}", self, target));
         vec
     }
 }

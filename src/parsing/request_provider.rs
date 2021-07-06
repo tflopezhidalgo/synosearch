@@ -1,13 +1,11 @@
-use std::sync::Arc;
 use std::fmt::Display;
+use std::sync::Arc;
 
-use reqwest::header::USER_AGENT;
 use reqwest::blocking::Client;
+use reqwest::header::USER_AGENT;
 
 use crate::Logger;
 
-const MESSAGE_INIT: &str = "Get request from";
-const MESSAGE_GET_CONTEXT: &str = "Get context request from";
 const APP_USER_AGENT: &str = "curl/7.68.0";
 
 pub struct RequestProvider {
@@ -27,14 +25,17 @@ impl RequestProvider {
     }
 
     pub fn make_request(&self) -> String {
-        self.logger.info(format!("{} URL: {}", MESSAGE_INIT, self.url));
-
-        let res = match Client::new().get(self.url.clone()).header(USER_AGENT, APP_USER_AGENT).send() {
+        let res = match Client::new()
+            .get(self.url.clone())
+            .header(USER_AGENT, APP_USER_AGENT)
+            .send()
+        {
             Ok(request) => request,
             Err(error) => panic!("Error request from {}: {:?}", self.url, error),
         };
 
-        self.logger.info(format!("{} URL: {}", MESSAGE_GET_CONTEXT, self.url));
+        self.logger
+            .info(format!("[{}] Requested for: {}", self, self.url));
 
         match res.text() {
             Ok(contents) => contents,

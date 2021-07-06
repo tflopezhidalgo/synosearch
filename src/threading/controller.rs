@@ -92,7 +92,7 @@ impl Controller {
             );
 
             self.logger
-                .info("Send request to words threads".to_string());
+                .info(format!("[{}] Send request to words threads", self));
             self.word_threads.push(thread::spawn(move || {
                 word.send_requests_to_pages_concurrently();
             }));
