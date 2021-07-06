@@ -106,7 +106,7 @@ impl PageWorker {
             }
         }
         let vec = self.send_request();
-        *last = time::Instant::now();
+        *guard = time::Instant::now();
 
         cvar.notify_all();
 
