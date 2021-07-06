@@ -1,4 +1,4 @@
-use actix::prelude::{Handler};
+use actix::prelude::Handler;
 use actix::{Actor, SyncContext};
 
 use std::sync::Arc;
@@ -6,7 +6,7 @@ use std::sync::Arc;
 
 use crate::main_actors::AvailableParsers;
 
-use super::messages::{WorkerSynonymsRequest, SynonymsResult};
+use super::messages::{SynonymsResult, WorkerSynonymsRequest};
 
 #[path = "../parsing/parser.rs"]
 mod parser;
@@ -30,14 +30,23 @@ impl Handler<WorkerSynonymsRequest> for Worker {
         request: WorkerSynonymsRequest,
         _: &mut SyncContext<Self>,
     ) -> Self::Result {
-
         let parser: Option<Box<dyn Parser>> = match *request.parser {
-            AvailableParsers::Thesaurus => Some(Box::new(ThesaurusProvider::new(request.logger.clone()))),
-            AvailableParsers::YourDictionary => Some(Box::new(YourDictionaryProvider::new(request.logger.clone()))),
-            AvailableParsers::MerriamWebster => Some(Box::new(MerriamWebsterProvider::new(request.logger.clone()))),
+            AvailableParsers::Thesaurus => {
+                Some(Box::new(ThesaurusProvider::new(request.logger.clone())))
+            }
+            AvailableParsers::YourDictionary => Some(Box::new(YourDictionaryProvider::new(
+                request.logger.clone(),
+            ))),
+            AvailableParsers::MerriamWebster => Some(Box::new(MerriamWebsterProvider::new(
+                request.logger.clone(),
+            ))),
         };
 
-        request.logger.info(format!("[{:?}] Worker making request for {:?}", *request.parser, (&request.target).to_string()));
+        request.logger.info(format!(
+            "[{:?}] Worker making request for {:?}",
+            *request.parser,
+            (&request.target).to_string()
+        ));
 
         let synonyms = Arc::new(parser.unwrap().parse((&request.target).to_string()));
 

@@ -9,8 +9,12 @@ use parsing::parser::{MerriamWebsterProvider, Parser, ThesaurusProvider, YourDic
 
 use crate::Logger;
 
-pub fn main_threads(words: Vec<String>, logger: Arc<Logger>, max_concurrency: usize,
-        min_time_request_sec: u64) {
+pub fn main_threads(
+    words: Vec<String>,
+    logger: Arc<Logger>,
+    max_concurrency: usize,
+    min_time_request_sec: u64,
+) {
     let p1 = ThesaurusProvider::new(logger.clone());
     let p2 = YourDictionaryProvider::new(logger.clone());
     let p3 = MerriamWebsterProvider::new(logger.clone());
@@ -24,7 +28,13 @@ pub fn main_threads(words: Vec<String>, logger: Arc<Logger>, max_concurrency: us
 
     let words_arc = Arc::from(words);
 
-    let controller = Controller::new(words_arc, providers_arc, logger, max_concurrency, min_time_request_sec);
+    let controller = Controller::new(
+        words_arc,
+        providers_arc,
+        logger,
+        max_concurrency,
+        min_time_request_sec,
+    );
 
     controller.process_words_concurrently();
 }

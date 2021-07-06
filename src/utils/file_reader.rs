@@ -1,7 +1,7 @@
-use std::fs::File;
 use std::fmt::Display;
+use std::fs::File;
+use std::io::{BufRead, BufReader, Error};
 use std::sync::Arc;
-use std::io::{BufReader, BufRead, Error};
 
 use crate::Logger;
 
@@ -12,7 +12,6 @@ pub struct FileReader {
 }
 
 impl Display for FileReader {
-
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "FileReader")
     }
@@ -20,7 +19,7 @@ impl Display for FileReader {
 
 impl FileReader {
     pub fn new(filename: String, logger: Arc<Logger>) -> Self {
-        println!("Taking words from {:?}", filename); 
+        println!("Taking words from {:?}", filename);
         FileReader { filename, logger }
     }
 
@@ -28,9 +27,9 @@ impl FileReader {
     /// `self.filename` splitting by newline separator or a
     /// io::Error.
     pub fn get_words(&self) -> Result<Vec<String>, Error> {
-
         let file = File::open(&self.filename)?;
-        self.logger.info(format!("[{}] Opened file: {:?}", self, self.filename));
+        self.logger
+            .info(format!("[{}] Opened file: {:?}", self, self.filename));
         let reader = BufReader::new(file);
 
         let mut words = vec![];
@@ -40,7 +39,8 @@ impl FileReader {
 
         words.retain(|x| (x != "" && x != " "));
 
-        self.logger.info(format!("[{}] Readed word list: {:?}", self, words));
+        self.logger
+            .info(format!("[{}] Readed word list: {:?}", self, words));
 
         Ok(words)
     }

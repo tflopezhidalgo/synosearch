@@ -6,7 +6,6 @@ use std::sync::Arc;
 
 use crate::Logger;
 
-
 const APP_USER_AGENT: &str = "curl/7.68.0";
 const MESSAGE_RETURN_SYNONIMOUS: &str = "Return synonimous from";
 
@@ -31,8 +30,7 @@ const URL_THERASAURUS: &str = "https://www.thesaurus.com/browse/";
 impl Parser for ThesaurusProvider {
     fn parse(&self, target: String) -> Vec<String> {
         let url = format!("{}{}", URL_THERASAURUS, target);
-        let contents = RequestProvider::new(url.clone(), self.logger.clone()).
-            make_request();
+        let contents = RequestProvider::new(url.clone(), self.logger.clone()).make_request();
 
         let vec_class = contents.split("e1ccqdb60\">").collect::<Vec<&str>>();
         if vec_class.len() == 1 {
@@ -74,9 +72,9 @@ const URL_YOURDICTIONARY: &str = "https://thesaurus.yourdictionary.com/";
 impl Parser for YourDictionaryProvider {
     fn parse(&self, target: String) -> Vec<String> {
         let url = format!("{}{}", URL_YOURDICTIONARY, target);
-        let contents = RequestProvider::new(url.clone(), self.logger.clone()).
-            make_request_client(APP_USER_AGENT);
-        
+        let contents = RequestProvider::new(url.clone(), self.logger.clone())
+            .make_request_client(APP_USER_AGENT);
+
         let vec_class = contents
             .split("<div class=\"single-synonym-wrapper\" ")
             .collect::<Vec<&str>>();
@@ -123,8 +121,7 @@ const URL_MERRIAM_WEBSTER: &str = "https://www.merriam-webster.com/thesaurus/";
 impl Parser for MerriamWebsterProvider {
     fn parse(&self, target: String) -> Vec<String> {
         let url = format!("{}{}", URL_MERRIAM_WEBSTER, target);
-        let contents = RequestProvider::new(url.clone(), self.logger.clone()).
-            make_request();
+        let contents = RequestProvider::new(url.clone(), self.logger.clone()).make_request();
 
         let vec_class = contents
             .split("<ul class=\"mw-list\">")

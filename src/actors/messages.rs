@@ -2,8 +2,8 @@ use actix::prelude::*;
 
 use std::sync::Arc;
 
-use crate::main_actors::AvailableParsers;
 use crate::logger::Logger;
+use crate::main_actors::AvailableParsers;
 
 #[derive(Message)]
 #[rtype(result = "()")]
@@ -37,7 +37,7 @@ pub struct WorkerSynonymsRequest {
 
 #[derive(Message)]
 #[rtype(result = "()")]
-/// Vec<String> representing synonyms for a word. 
+/// Vec<String> representing synonyms for a word.
 pub struct SynonymsResult {
     pub synonyms: Arc<Vec<String>>,
 }

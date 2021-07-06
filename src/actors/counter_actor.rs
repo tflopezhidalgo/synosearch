@@ -19,7 +19,7 @@ pub struct CounterActor {
     pub count: u32,
 
     /// Reference to the global logger
-    pub logger: Arc<Logger>
+    pub logger: Arc<Logger>,
 }
 
 impl Actor for CounterActor {
@@ -27,7 +27,6 @@ impl Actor for CounterActor {
 }
 
 impl Display for CounterActor {
-
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "CounterActor")
     }
@@ -37,10 +36,12 @@ impl Handler<Increment> for CounterActor {
     type Result = ();
 
     fn handle(&mut self, _: Increment, _: &mut Context<Self>) -> Self::Result {
-        self.logger.info(format!("[{}] Received Increment message", self));
+        self.logger
+            .info(format!("[{}] Received Increment message", self));
         self.count += 1;
         if self.count == self.limit {
-            self.logger.info(format!("[{}] Stopping current system", self));
+            self.logger
+                .info(format!("[{}] Stopping current system", self));
             System::current().stop();
         }
     }

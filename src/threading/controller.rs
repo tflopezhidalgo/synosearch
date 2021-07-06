@@ -25,11 +25,10 @@ pub struct Controller {
     sem: Arc<Semaphore>,
     providers: Arc<Vec<Box<dyn Parser + Send + Sync>>>,
     logger: Arc<Logger>,
-    min_time_request_sec: u64
+    min_time_request_sec: u64,
 }
 
 impl Display for Controller {
-
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Controller")
     }
@@ -43,7 +42,7 @@ impl Controller {
         providers: Arc<Vec<Box<dyn Parser + Send + Sync>>>,
         logger: Arc<Logger>,
         max_concurrency: usize,
-        min_time_request_sec: u64
+        min_time_request_sec: u64,
     ) -> Controller {
         let max_pages = providers.len();
         Controller {
@@ -53,7 +52,7 @@ impl Controller {
             sem: Arc::new(Semaphore::new(max_concurrency as isize)),
             providers: providers,
             logger: logger,
-            min_time_request_sec: min_time_request_sec
+            min_time_request_sec: min_time_request_sec,
         }
     }
 

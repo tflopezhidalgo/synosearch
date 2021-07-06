@@ -3,11 +3,11 @@ mod counter;
 #[path = "../threading/page_worker.rs"]
 mod page;
 
-use crate::Logger;
 use crate::main_threads::Parser;
-use std::fmt::Display;
+use crate::Logger;
 use counter::Counter;
 use page::PageWorker;
+use std::fmt::Display;
 use std::sync::{Arc, Condvar, Mutex};
 use std::thread::{self, JoinHandle};
 use std_semaphore::Semaphore;
@@ -25,11 +25,10 @@ pub struct WordWorker {
     sem: Arc<Semaphore>,
     providers: Arc<Vec<Box<dyn Parser + Send + Sync>>>,
     logger: Arc<Logger>,
-    min_time_request_sec: u64
+    min_time_request_sec: u64,
 }
 
 impl Display for WordWorker {
-
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "[WordWorker][{}]", self.word)
     }
@@ -46,7 +45,7 @@ impl WordWorker {
         sem: Arc<Semaphore>,
         providers: Arc<Vec<Box<dyn Parser + Send + Sync>>>,
         logger: Arc<Logger>,
-        min_time_request_sec: u64
+        min_time_request_sec: u64,
     ) -> WordWorker {
         WordWorker {
             word: word,
@@ -55,7 +54,7 @@ impl WordWorker {
             page_threads: vec![],
             providers: providers,
             logger: logger,
-            min_time_request_sec: min_time_request_sec
+            min_time_request_sec: min_time_request_sec,
         }
     }
 
@@ -76,9 +75,8 @@ impl WordWorker {
             let providers_clone = self.providers.clone();
             let logger_clone = self.logger.clone();
 
-            self.logger.info(
-                format!("{} Spawning thread for {} page", self, i)
-            );
+            self.logger
+                .info(format!("{} Spawning thread for {} page", self, i));
             let page = PageWorker::new(
                 word_clone,
                 i as usize,

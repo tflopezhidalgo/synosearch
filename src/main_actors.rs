@@ -1,28 +1,32 @@
 use crate::Logger;
 
-use actix::prelude::{Actor, System, SyncArbiter};
+use actix::prelude::{Actor, SyncArbiter, System};
 use std::sync::Arc;
 #[path = "./actors/mod.rs"]
 mod actors;
 
 use actors::counter_actor::CounterActor;
-use actors::perwordworker::PerWordWorker;
-use actors::worker::Worker;
 use actors::gatekeeper::Gatekeeper;
 use actors::messages::SynonymRequest;
+use actors::perwordworker::PerWordWorker;
+use actors::worker::Worker;
 
 const MESSAGE_WORKER_ERROR: &str = "Unable to send word to actor:";
 const MESSAGE_SYSTEM_ERROR: &str = "Unable to run actors' system: ";
 
 #[derive(Debug)]
-pub enum AvailableParsers{
+pub enum AvailableParsers {
     YourDictionary,
     MerriamWebster,
-    Thesaurus
+    Thesaurus,
 }
 
-pub fn main_actors(words: Vec<String>, logger: Arc<Logger>, max_concurrency: usize,
-        min_time_request_sec: u64) {
+pub fn main_actors(
+    words: Vec<String>,
+    logger: Arc<Logger>,
+    max_concurrency: usize,
+    min_time_request_sec: u64,
+) {
     let system = System::new();
     let mut words_arc = vec![];
     for w in words {
@@ -31,11 +35,11 @@ pub fn main_actors(words: Vec<String>, logger: Arc<Logger>, max_concurrency: usi
 
     let worker = Arc::new(SyncArbiter::start(max_concurrency, || Worker));
 
-    let parsers = vec!(
+    let parsers = vec![
         AvailableParsers::YourDictionary,
         AvailableParsers::MerriamWebster,
-        AvailableParsers::Thesaurus
-    );
+        AvailableParsers::Thesaurus,
+    ];
 
     system.block_on(async {
         let mut gatekeepers = vec![];

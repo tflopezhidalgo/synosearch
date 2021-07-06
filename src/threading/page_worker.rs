@@ -2,11 +2,10 @@ use super::Parser;
 
 use crate::Logger;
 
+use std::fmt::Display;
 use std::sync::{Arc, Condvar, Mutex};
 use std::time;
-use std::fmt::Display;
 use std_semaphore::Semaphore;
-
 
 const NOTIFY_FRECUENCY: u64 = 1;
 
@@ -21,11 +20,10 @@ pub struct PageWorker {
     sem: Arc<Semaphore>,
     providers: Arc<Vec<Box<dyn Parser + Send + Sync>>>,
     logger: Arc<Logger>,
-    min_time_request_sec: u64
+    min_time_request_sec: u64,
 }
 
 impl Display for PageWorker {
-
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "[PageWorker][{}][{}]", self.word, self.id)
     }
@@ -44,7 +42,7 @@ impl PageWorker {
         sem: Arc<Semaphore>,
         providers: Arc<Vec<Box<dyn Parser + Send + Sync>>>,
         logger: Arc<Logger>,
-        min_time_request_sec: u64
+        min_time_request_sec: u64,
     ) -> PageWorker {
         PageWorker {
             word: word,
@@ -53,7 +51,7 @@ impl PageWorker {
             condvar: condvar,
             providers: providers,
             logger: logger,
-            min_time_request_sec: min_time_request_sec
+            min_time_request_sec: min_time_request_sec,
         }
     }
 
@@ -68,7 +66,8 @@ impl PageWorker {
 
         let vec = self.providers[self.id].parse(word_clone.to_string());
 
-        self.logger.info(format!("{} Request result: {:?}", self, vec));
+        self.logger
+            .info(format!("{} Request result: {:?}", self, vec));
 
         self.sem.release();
 
@@ -110,7 +109,8 @@ impl PageWorker {
 
         cvar.notify_all();
 
-        self.logger.info(format!("{} Notifying and releasing lock", self));
+        self.logger
+            .info(format!("{} Notifying and releasing lock", self));
 
         vec
     }

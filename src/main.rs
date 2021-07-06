@@ -1,5 +1,5 @@
-mod main_threads;
 mod main_actors;
+mod main_threads;
 
 use std::env;
 use std::process;
@@ -18,10 +18,12 @@ const MESSAGE_LOGGER_ERROR: &str = "Unable to open logger file ";
 const MESSAGE_OPEN_FILE_ERROR: &str = "Unable to open file";
 const MESSAGE_INVALID_MODE: &str = "Invalid mode";
 
-
 fn usage() -> i32 {
     let args: Vec<String> = env::args().collect();
-    println!("Usage: {} <actors|threads> <input file> <max_concurrency> <min_time_request_sec>", args[0]);
+    println!(
+        "Usage: {} <actors|threads> <input file> <max_concurrency> <min_time_request_sec>",
+        args[0]
+    );
     return -1;
 }
 
@@ -32,9 +34,12 @@ fn starting(mode: String, threads: usize, timeout: u64) {
     );
 }
 
-
-fn chose_mode(mode: String, filename: String, max_concurrency: usize,
-        min_time_request_sec: u64) -> i32 {
+fn chose_mode(
+    mode: String,
+    filename: String,
+    max_concurrency: usize,
+    min_time_request_sec: u64,
+) -> i32 {
     let logger = match Logger::new(LOG_FILENAME) {
         Ok(logger) => Arc::new(logger),
         Err(e) => {
@@ -61,7 +66,12 @@ fn chose_mode(mode: String, filename: String, max_concurrency: usize,
         }
         "threads" => {
             starting(mode, max_concurrency, min_time_request_sec);
-            main_threads::main_threads(words, logger.clone(), max_concurrency, min_time_request_sec);
+            main_threads::main_threads(
+                words,
+                logger.clone(),
+                max_concurrency,
+                min_time_request_sec,
+            );
             return 0;
         }
         _ => {
@@ -78,13 +88,17 @@ fn main() {
     }
     let max_concurrency = match args[3].parse::<usize>() {
         Ok(result) => result,
-        Err(_) => 0
+        Err(_) => 0,
     };
 
     let min_time_request_sec = match args[4].parse::<u64>() {
         Ok(result) => result,
-        Err(_) => 0
+        Err(_) => 0,
     };
-    process::exit(chose_mode(args[1].clone(), args[2].clone(),
-        max_concurrency, min_time_request_sec));
+    process::exit(chose_mode(
+        args[1].clone(),
+        args[2].clone(),
+        max_concurrency,
+        min_time_request_sec,
+    ));
 }

@@ -9,8 +9,7 @@ pub struct Logger {
 
 impl Logger {
     pub fn new(filename: &str) -> Result<Self, Error> {
-        println!(
-            "Logging messages will be saved to: {:?}.", filename);
+        println!("Logging messages will be saved to: {:?}.", filename);
         let log_f = File::create(filename)?;
         Ok(Logger {
             file: Mutex::new(log_f),
