@@ -3,11 +3,14 @@ mod request_provider;
 use request_provider::RequestProvider;
 
 use std::sync::Arc;
+use std::fmt::Display;
 
 use crate::Logger;
 
-const APP_USER_AGENT: &str = "curl/7.68.0";
-const MESSAGE_RETURN_SYNONIMOUS: &str = "Return synonimous from";
+const URL_THERASAURUS: &str = "https://www.thesaurus.com/browse/";
+const URL_MERRIAM_WEBSTER: &str = "https://www.merriam-webster.com/thesaurus/";
+const URL_YOURDICTIONARY: &str = "https://thesaurus.yourdictionary.com/";
+
 
 pub trait Parser {
     fn parse(&self, target: String) -> Vec<String>;
@@ -25,7 +28,11 @@ impl ThesaurusProvider {
     }
 }
 
-const URL_THERASAURUS: &str = "https://www.thesaurus.com/browse/";
+impl Display for ThesaurusProvider {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "ThesaurusProvider")
+    }
+}
 
 impl Parser for ThesaurusProvider {
     fn parse(&self, target: String) -> Vec<String> {
@@ -47,11 +54,8 @@ impl Parser for ThesaurusProvider {
                 vec.push(target);
             }
         }
-        self.logger.info(format!(
-            "{} Therasaurus, WORD: {}",
-            MESSAGE_RETURN_SYNONIMOUS, target
-        ));
-        return vec;
+        self.logger.info(format!("[{}] Request for: {}", self, target));
+        vec
     }
 }
 
@@ -67,13 +71,17 @@ impl YourDictionaryProvider {
     }
 }
 
-const URL_YOURDICTIONARY: &str = "https://thesaurus.yourdictionary.com/";
+impl Display for YourDictionaryProvider {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "YourDictionaryProvider")
+    }
+}
+
 
 impl Parser for YourDictionaryProvider {
     fn parse(&self, target: String) -> Vec<String> {
         let url = format!("{}{}", URL_YOURDICTIONARY, target);
-        let contents = RequestProvider::new(url.clone(), self.logger.clone())
-            .make_request_client(APP_USER_AGENT);
+        let contents = RequestProvider::new(url.clone(), self.logger.clone()).make_request();
 
         let vec_class = contents
             .split("<div class=\"single-synonym-wrapper\" ")
@@ -96,11 +104,8 @@ impl Parser for YourDictionaryProvider {
                 vec.push(split_link[0].to_string());
             }
         }
-        self.logger.info(format!(
-            "{} YourDictionary, WORD: {}",
-            MESSAGE_RETURN_SYNONIMOUS, target
-        ));
-        return vec;
+        self.logger.info(format!("[{}] Request for: {}", self, target));
+        vec
     }
 }
 
@@ -116,7 +121,12 @@ impl MerriamWebsterProvider {
     }
 }
 
-const URL_MERRIAM_WEBSTER: &str = "https://www.merriam-webster.com/thesaurus/";
+impl Display for MerriamWebsterProvider {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "MerriamWebsterProvider")
+    }
+}
+
 
 impl Parser for MerriamWebsterProvider {
     fn parse(&self, target: String) -> Vec<String> {
@@ -145,10 +155,7 @@ impl Parser for MerriamWebsterProvider {
                 vec.push(word);
             }
         }
-        self.logger.info(format!(
-            "{} MarrianWebster, WORD: {}",
-            MESSAGE_RETURN_SYNONIMOUS, target
-        ));
-        return vec;
+        self.logger.info(format!("[{}] Request for: {}", self, target));
+        vec
     }
 }
