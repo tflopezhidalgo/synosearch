@@ -8,6 +8,7 @@ use crate::Logger;
 
 const APP_USER_AGENT: &str = "curl/7.68.0";
 
+/// Generic request client.
 pub struct RequestProvider {
     url: String,
     logger: Arc<Logger>,
@@ -20,10 +21,13 @@ impl Display for RequestProvider {
 }
 
 impl RequestProvider {
+    /// Defines the constructor. 
     pub fn new(url: String, logger: Arc<Logger>) -> Self {
         RequestProvider { url, logger }
     }
 
+    /// Defines how to make a request to an URL handling errors
+    /// and showing the proper logging messages.
     pub fn make_request(&self) -> String {
         let res = match Client::new()
             .get(self.url.clone())

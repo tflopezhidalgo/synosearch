@@ -8,19 +8,17 @@ use actix::{Actor, Context};
 
 use std::fmt::Display;
 use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use crate::logger::Logger;
 use crate::main_actors::AvailableParsers;
 
 /// Responsible for keep the consecutives request to the same site
-/// rate limited
+/// rate limited. It is made through closing this actor mailbox
+/// by a fixed amount of time (after each request forwarded to the workers).
 pub struct Gatekeeper {
     /// Worker's pool reference for requesting synonyms.
     pub worker: Arc<Addr<Worker>>,
-
-    /// Instant where the last request was made.
-    pub last: Instant,
 
     /// Parser index.
     pub parser: Arc<AvailableParsers>,
@@ -42,6 +40,9 @@ impl Display for Gatekeeper {
     }
 }
 
+/// Handles a GatekeeperRequest message. This messages is a request
+/// for a SynonymRequest. This actors forwards the request to the pool of workers.
+/// And sleeps for the `self.sleep_time`.
 impl Handler<GatekeeperRequest> for Gatekeeper {
     type Result = ();
 

@@ -32,6 +32,9 @@ impl Display for CounterActor {
     }
 }
 
+/// Handler for the Increment message. This message is received
+/// when one of the PerWordWorker finishes the processing of its word.
+/// When we reach the limit stop the entire system.
 impl Handler<Increment> for CounterActor {
     type Result = ();
 

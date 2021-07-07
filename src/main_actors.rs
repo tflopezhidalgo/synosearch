@@ -47,7 +47,6 @@ pub fn main_actors(
             gatekeepers.push(Arc::new(
                 Gatekeeper {
                     worker: worker.clone(),
-                    last: std::time::Instant::now() - std::time::Duration::from_secs(10000),
                     parser: Arc::new(parser_type),
                     sleep_time: min_time_request_sec,
                     logger: logger.clone(),

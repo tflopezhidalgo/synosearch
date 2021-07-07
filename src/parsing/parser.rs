@@ -11,6 +11,8 @@ const URL_THERASAURUS: &str = "https://www.thesaurus.com/browse/";
 const URL_MERRIAM_WEBSTER: &str = "https://www.merriam-webster.com/thesaurus/";
 const URL_YOURDICTIONARY: &str = "https://thesaurus.yourdictionary.com/";
 
+/// Basic Parser trait. Who implements this trait should
+/// provide a definition for the parse() function.
 pub trait Parser {
     fn parse(&self, target: String) -> Vec<String>;
 }

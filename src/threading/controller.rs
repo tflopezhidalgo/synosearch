@@ -23,8 +23,11 @@ pub struct Controller {
     condvars: Arc<Vec<Arc<(Mutex<Instant>, Condvar)>>>,
     /// The semaphore that limits the maximum amount of concurrent requests
     sem: Arc<Semaphore>,
+    /// List of available Parsers
     providers: Arc<Vec<Box<dyn Parser + Send + Sync>>>,
+    /// Reference to the global logger
     logger: Arc<Logger>,
+    /// Mininum time between two consecutives request to the same site
     min_time_request_sec: u64,
 }
 

@@ -2,7 +2,6 @@ use actix::prelude::Handler;
 use actix::{Actor, SyncContext};
 
 use std::sync::Arc;
-// TODO. add `use std::fmt::Display;`
 
 use crate::main_actors::AvailableParsers;
 
@@ -14,14 +13,17 @@ mod parser;
 use parser::{MerriamWebsterProvider, Parser, ThesaurusProvider, YourDictionaryProvider};
 
 /// Worker actor. Used in a pool of actors.
-/// Responsible for requesting to the synonyms page
-
+/// Responsible for request to the synonyms page and 
+/// parse the content of result.
 pub struct Worker;
 
 impl Actor for Worker {
     type Context = SyncContext<Self>;
 }
 
+/// Handles basic synonym request. It is, make the 
+/// request to the page determined by the parser type and 
+/// parsing the result content.
 impl Handler<WorkerSynonymsRequest> for Worker {
     type Result = ();
 
