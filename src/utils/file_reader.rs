@@ -5,7 +5,9 @@ use std::sync::Arc;
 
 use crate::Logger;
 
-/// FileReader struct
+/// FileReader struct. Responsible for open the 
+/// file and reading its contents returning a vector 
+/// of words to find synonyms.
 pub struct FileReader {
     filename: String,
     logger: Arc<Logger>,
@@ -18,6 +20,7 @@ impl Display for FileReader {
 }
 
 impl FileReader {
+    /// Constructor for the FileReader.
     pub fn new(filename: String, logger: Arc<Logger>) -> Self {
         println!("Taking words from {:?}", filename);
         FileReader { filename, logger }

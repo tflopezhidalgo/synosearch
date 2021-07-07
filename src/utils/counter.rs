@@ -5,9 +5,15 @@ use crate::Logger;
 
 /* COUNTER */
 
+/// Counter struct. Responsible for format the 
+/// synonyms results in the screen with a nice
+/// syntax. 
 pub struct Counter;
 
 impl Counter {
+    /// Formatting method. Accepts a target word (for whose the synonyms is)
+    /// and a list of synonyms to be formatted. Also received the logger
+    /// referecne to log when the synonyms are being showed in the screen.
     pub fn count(word: String, synonyms: Vec<String>, logger: Arc<Logger>) {
         let mut s_counter = HashMap::new();
 
